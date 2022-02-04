@@ -8,6 +8,8 @@ use crate::rt_rs::raytracer::camera::Camera;
 
 fn main() {
     let mut rng = rand::thread_rng();
+    // if you make it 2000x1000 that's 100x, and then 100 more samples of each,
+    // and then test against all the objects again for differaction
     let nx = 2000; // image width
     let ny = 1000; // image height
     let ns = 100;  // number of anti-aliasing samples
@@ -32,6 +34,8 @@ fn main() {
                 col += color(&r, &world);
             }
             col /= ns as f64;
+            // apply some gamma correction
+            col = Vec3::new( col.x.sqrt(), col.y.sqrt(), col.z.sqrt());
             let ir = (255.999 * col.x) as i32;
             let ig = (255.999 * col.y) as i32;
             let ib = (255.999 * col.z) as i32;

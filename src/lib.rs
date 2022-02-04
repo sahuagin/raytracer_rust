@@ -1,13 +1,17 @@
 pub mod raytracer;
+use rand::Rng;
 use self::raytracer::ray::{Ray};
 use self::raytracer::vec3::{Vec3, Color, unit_vector, dot};
 //use crate::sphere::Sphere;
 
 #[allow(unused_imports, dead_code)]
 pub fn color(r: &Ray, world: &HitList) -> Color {
-    match world.hit(r, 0.0, f64::MAX) {
+    // the 0.001 ignores hits very close to 0, which handles issues with
+    // floating point approximation, which generates "shadow acne"
+    match world.hit(r, 0.001, f64::MAX) {
         Some(rec) => {
-            return 0.5*Vec3::new(rec.normal.x+1.0, rec.normal.y+1.0, rec.normal.z+1.0);
+            let target = rec.p + rec.normal + random_in_unit_sphere();
+            return 0.5*color( &Ray::new(&rec.p, &(target-rec.p)), world);
         }
         None => {
             let unit_direction = unit_vector(&r.direction());
@@ -91,6 +95,21 @@ impl Hitable for HitList {
         temp_rec
     }
     
+}
+
+#[allow(unused_imports, dead_code)]
+pub fn random_in_unit_sphere() -> Vec3 {
+    let mut p: Option<Vec3> = None;
+    let mut rng = rand::thread_rng();
+    
+    loop {
+        p.replace(2.0 * Vec3::new(rng.gen::<f64>(),rng.gen::<f64>(),rng.gen::<f64>()  ) - Vec3::new(1.0, 1.0, 1.0));
+        if p.unwrap().length_squared() >= 1.0 {
+            break;
+        }
+    }
+    
+    p.unwrap()
 }
 
 #[cfg(test)]
