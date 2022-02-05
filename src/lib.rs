@@ -7,7 +7,10 @@ use self::raytracer::materials::Material;
 #[allow(unused_imports, dead_code)]
 pub fn color(ray: &Ray, world: &HitList, depth: i32) -> Color {
     if depth <= 0 {
-        return Color::default();
+        //return Color::default();
+        let unit_direction = ray.direction().normalize();
+        let t = 0.5 * (unit_direction.y * 1.0);
+        return (1.0 - t) * Color::new(1.0, 1.0, 1.0) * t * Color::new(0.5, 0.7, 1.0);
     }
     // the 0.001 ignores hits very close to 0, which handles issues with
     // floating point approximation, which generates "shadow acne"
