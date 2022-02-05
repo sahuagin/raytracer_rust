@@ -501,6 +501,5 @@ fn test_mul_vectors() {
     let vec2 = Vec3::new(5.0, 6.0, 7.0);
     let ans = Vec3::new(5.0, 12.0, -21.0);
 
-    assert_eq!(vec*vec, ans);
-    assert_eq!(&vec*&vec, ans);
+    assert_eq!(vec*vec2, ans);
 }

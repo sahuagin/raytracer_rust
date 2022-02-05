@@ -3,7 +3,7 @@ mod sphere {
     //use crate::{Hittable, Ray, HitRecord, HitWrapper};
     use crate::{Hittable, Ray, HitRecord};
     use crate::raytracer::vec3::{Vec3, dot};
-    use crate::raytracer::materials::Material;
+    use crate::raytracer::materials::{Material};
 
     //#[derive(Clone, PartialEq)]
     pub struct Sphere {
@@ -74,30 +74,39 @@ pub use sphere::Sphere;
 #[allow(unused_imports)]
 use crate::raytracer::ray::{Ray};
 #[allow(unused_imports)]
-use crate::raytracer::vec3::{Vec3, Point3};
+use crate::raytracer::vec3::{Vec3, Point3,Color};
 #[allow(unused_imports)]
 use crate::HitRecord;
 #[allow(unused_imports)]
 use crate::Hittable;
+#[allow(unused_imports)]
+use crate::raytracer::materials::{Lambertian};
 
 #[test]
 fn test_sphere_hit(){
     let pt1 = Point3::new(0.0,0.0,0.0);
     let pt2 = Point3::new(1.0,1.0,1.0);
+    let l   = Lambertian::new(&Color::new(0.1, 0.8, 0.1));
     let r   = Ray::new(&pt1, &pt2);
     let center = Point3::new(2.0, 2.0, 2.0);
     let radius = 3.0;
-    let s   = sphere::Sphere::new(&center, radius);
-    let hitrec = Some(HitRecord { t: 0.26794919243112264,
+    let s   = sphere::Sphere::new(&center, radius, l);
+    let hitrec = HitRecord { t: 0.26794919243112264,
                                 p: Vec3 { x: 0.26794919243112264,
                                         y: 0.26794919243112264,
                                         z: 0.26794919243112264 },
                                 normal: Vec3 { x: -0.5773502691896258,
                                     y: -0.5773502691896258,
-                                    z: -0.5773502691896258
-                                }});
+                                    z: -0.5773502691896258 },
+                                front_face: false,
+                                material: Some(&l),
+                                };
 
     // this should have 2 hits, but we'll return the closest one
-    assert_eq!(s.hit(&r, 0.0, 4.0), hitrec);
-    println!("the hitrec i: {:?}", &hitrec);
+    if let Some(result) = s.hit(&r, 0.0, 4.0){
+        println!("the result front_face: {}", result.front_face );
+        assert_eq!(result.t, hitrec.t);
+        println!("the result front_face: {}", result);
+    }
+    //println!("the result front_face: {}", result.material);
 }

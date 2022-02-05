@@ -23,12 +23,15 @@ fn main() {
     world.list.push(Box::new(Sphere::new(&Vec3::new(0.0,-100.5, -1.0), 100.0,
                                         Lambertian::new(&Color::new(0.8, 0.8, 0.0)))));
     world.list.push(Box::new(Sphere::new(&Vec3::new(1.0,0.0,-1.0),0.5,
-    // change 0.0 to 0.3 for fuzzy
                                         Metal::new(&Color::new(0.8, 0.6, 0.2), 1.0))));
     world.list.push(Box::new(Sphere::new(&Vec3::new(-1.0,0.0,-1.0), 0.5,
-                                       // change 0.0 to 1.0 for most fuzzy
-                                       // Metal::new(&Color::new(0.8, 0.8, 0.8), 1.0))));
                                         Dielectric::new(1.5))));
+    world.list.push(Box::new(Sphere::new(&Vec3::new(-1.0,0.0,-1.0), -0.45,
+                                        Dielectric::new(1.5))));
+    // an interesting and easy trick with dielectric spheres is to note that if you use a 
+    // negative radius, the geometry is unaffected but the surface normal
+    // points inward, so it can be used as a bubble to make a hollow glass sphere.
+    world.list.push(Box::new(Sphere::new(&Vec3::new(-1.0,0.0,-1.0), -0.45, Dielectric::new(1.5))));
     let camera = Camera::new();
     
     println!("P3\n{} {}\n255", nx, ny);
