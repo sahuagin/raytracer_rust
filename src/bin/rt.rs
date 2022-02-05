@@ -13,8 +13,9 @@ fn main() {
     // and then test against all the objects again for differaction. And then
     // do a depth of 50.
     // NOTE: 2000x1000 takes about 40 minutes at this point
-    let nx = 400; // image width
-    let ny = 200; // image height
+    // only 92s as of this commit. Run in release instead of debug.
+    let nx = 2000; // image width
+    let ny = 1000; // image height
     let ns = 100;  // number of anti-aliasing samples
     const MAX_DEPTH: i32 = 50;
     let mut world = HitList::new();
@@ -23,7 +24,7 @@ fn main() {
     world.list.push(Box::new(Sphere::new(&Vec3::new(0.0,-100.5, -1.0), 100.0,
                                         Lambertian::new(&Color::new(0.8, 0.8, 0.0)))));
     world.list.push(Box::new(Sphere::new(&Vec3::new(1.0,0.0,-1.0),0.5,
-                                        Metal::new(&Color::new(0.8, 0.6, 0.2), 1.0))));
+                                        Metal::new(&Color::new(0.8, 0.6, 0.2), 0.2))));
     world.list.push(Box::new(Sphere::new(&Vec3::new(-1.0,0.0,-1.0), 0.5,
                                         Dielectric::new(1.5))));
     world.list.push(Box::new(Sphere::new(&Vec3::new(-1.0,0.0,-1.0), -0.45,
