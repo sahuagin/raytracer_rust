@@ -6,29 +6,27 @@ use self::raytracer::materials::Material;
 
 #[allow(unused_imports, dead_code)]
 pub fn color(ray: &Ray, world: &HitList, depth: i32) -> Color {
-    if depth <= 0 {
-        //return Color::default();
-        let unit_direction = ray.direction().normalize();
-        let t = 0.5 * (unit_direction.y * 1.0);
-        return (1.0 - t) * Color::new(1.0, 1.0, 1.0) * t * Color::new(0.5, 0.7, 1.0);
-    }
     // the 0.001 ignores hits very close to 0, which handles issues with
     // floating point approximation, which generates "shadow acne"
     if let Some(hit_record) = world.hit(ray, 0.001, f64::INFINITY) {
+        if depth <= 0 {
+            return Color::default();
+        }
         if let Some((attenuation, sray)) = hit_record
             .material
             .as_ref()
             .unwrap()
             .scatter(&ray, &hit_record) {
-                return color(&sray, &world, depth-1) * attenuation ;
+                return attenuation * color(&sray, &world, depth-1);
         }
         else {
             return Color::new(0.0, 0.0, 0.0);
         }
     }
-    let unit_direction = ray.direction().normalize();
-    let t = 0.5 * (unit_direction.y * 1.0);
-    (1.0 - t) * Color::new(1.0, 1.0, 1.0) * t * Color::new(0.5, 0.7, 1.0)
+    //let unit_direction = ray.direction().normalize();
+    let unit_direction = unit_vector(&ray.direction());
+    let t = 0.5 * (unit_direction.y + 1.0);
+    (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
 }
 
 #[allow(unused_imports, dead_code)]

@@ -12,8 +12,8 @@ fn main() {
     // if you make it 2000x1000 that's 100x, and then 100 more samples of each,
     // and then test against all the objects again for differaction. And then
     // do a depth of 50.
-    let nx = 200; // image width
-    let ny = 100; // image height
+    let nx = 2000; // image width
+    let ny = 1000; // image height
     let ns = 100;  // number of anti-aliasing samples
     const MAX_DEPTH: i32 = 50;
     let mut world = HitList::new();
@@ -23,10 +23,10 @@ fn main() {
                                         Lambertian::new(&Color::new(0.8, 0.8, 0.0)))));
     world.list.push(Box::new(Sphere::new(&Vec3::new(1.0,0.0,-1.0),0.5,
     // change 0.0 to 0.3 for fuzzy
-                                        Metal::new(&Color::new(0.8, 0.6, 0.2), 0.0))));
+                                        Metal::new(&Color::new(0.8, 0.6, 0.2), 0.3))));
     world.list.push(Box::new(Sphere::new(&Vec3::new(-1.0,0.0,-1.0), 0.5,
     // change 0.0 to 1.0 for most fuzzy
-                                        Metal::new(&Color::new(0.8, 0.8, 0.8), 0.0))));
+                                        Metal::new(&Color::new(0.8, 0.8, 0.8), 1.0))));
     let camera = Camera::new();
     
     println!("P3\n{} {}\n255", nx, ny);

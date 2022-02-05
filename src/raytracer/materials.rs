@@ -44,7 +44,8 @@ pub struct Metal {
 }
 
 impl Metal {
-    pub fn new(a: &Color, f: f64) -> Self {
+    pub fn new(a: &Color, mut f: f64) -> Self {
+        if f > 1.0 {f=1.0};
         Metal {
             albedo: *a,
             fuzz: f,
