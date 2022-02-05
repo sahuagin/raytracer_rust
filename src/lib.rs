@@ -2,27 +2,34 @@ pub mod raytracer;
 use rand::Rng;
 use self::raytracer::ray::{Ray};
 use self::raytracer::vec3::{Vec3, Color, unit_vector, dot};
-//use crate::sphere::Sphere;
+use self::raytracer::materials::Material;
 
 #[allow(unused_imports, dead_code)]
-pub fn color(r: &Ray, world: &HitList) -> Color {
+pub fn color(ray: &Ray, world: &HitList, depth: i32) -> Color {
+    if depth <= 0 {
+        return Color::default();
+    }
     // the 0.001 ignores hits very close to 0, which handles issues with
     // floating point approximation, which generates "shadow acne"
-    match world.hit(r, 0.001, f64::MAX) {
-        Some(rec) => {
-            let target = rec.p + rec.normal + random_in_unit_sphere();
-            return 0.5*color( &Ray::new(&rec.p, &(target-rec.p)), world);
+    if let Some(hit_record) = world.hit(ray, 0.001, f64::INFINITY) {
+        if let Some((attenuation, sray)) = hit_record
+            .material
+            .as_ref()
+            .unwrap()
+            .scatter(&ray, &hit_record) {
+                return color(&sray, &world, depth-1) * attenuation ;
         }
-        None => {
-            let unit_direction = unit_vector(&r.direction());
-            let t = 0.5*(unit_direction.y + 1.0);
-            return (1.0-t)*Vec3::new(1.0, 1.0, 1.0) + t*Vec3::new(0.5, 0.7, 1.0);
+        else {
+            return Color::new(0.0, 0.0, 0.0);
         }
     }
+    let unit_direction = ray.direction().normalize();
+    let t = 0.5 * (unit_direction.y * 1.0);
+    (1.0 - t) * Color::new(1.0, 1.0, 1.0) * t * Color::new(0.5, 0.7, 1.0)
 }
 
 #[allow(unused_imports, dead_code)]
-pub fn hit_sphere(center: &Vec3, radius: f64, r: &Ray) -> f64 {
+pub fn hit_sphere(center: &Point3, radius: f64, r: &Ray) -> f64 {
     let oc = r.origin() - center;
     let a = dot(&r.direction(), &r.direction());
     let b = 2.0 * dot(&oc, &r.direction());
@@ -39,57 +46,67 @@ pub fn hit_sphere(center: &Vec3, radius: f64, r: &Ray) -> f64 {
 }
 
 #[allow(unused_imports, dead_code)]
-pub trait Hitable {
+pub trait Hittable {
     fn hit(&self,
             r: &Ray,
             t_min: f64,
             t_max: f64) -> Option<HitRecord>;
-            
+    
 }
 
-//enum HitWrapper {
-//    Sphere(crate::sphere::Sphere),
-//    HitList(crate::HitList),
-//}
+#[allow(unused_imports, dead_code)]
+//#[derive(Clone, Copy, Debug, Default, PartialEq)]
+pub struct HitRecord<'world> {
+    pub t: f64,
+    pub p: Vec3,
+    pub normal: Vec3,
+    pub material: Option<&'world dyn Material>,
+    pub front_face: bool,
+}
 
 #[allow(unused_imports, dead_code)]
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
-pub struct HitRecord {
-    t: f64,
-    p: Vec3,
-    normal: Vec3,
+impl<'world> HitRecord<'world> {
+    pub fn new(p: Point3, t: f64, material: Option<&'world dyn Material>) -> Self {
+        HitRecord {
+            p,
+            normal: p,
+            material,
+            t,
+            front_face: false,
+        }
+    }
 }
 
 #[allow(unused_imports, dead_code)]
 #[derive(Default)]
 pub struct HitList {
     // we could also call this 'objects' but where's the fun in that?
-    pub list: Vec<Box<dyn Hitable>>,
-    //wrapper: HitWrapper::HitList,
+    pub list: Vec<Box<dyn Hittable + Sync + Send>>,
 }
 
 impl HitList {
-    //pub fn push(&mut self, obj: dyn Hitable) {
+    //pub fn push(&mut self, obj: dyn Hittable) {
     //    self.hitlist.push(Box::new(obj));
     //}
     pub fn new() -> HitList {
         HitList {
-            list: Vec::<Box<dyn Hitable>>::new(),
+            list: Vec::new(),
         }
+    }
+    
+    pub fn add(&mut self, object: impl Hittable + Sync + Send + 'static){
+        self.list.push(Box::new(object))
     }
 }
 
-impl Hitable for HitList {
+impl Hittable for HitList {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let mut temp_rec: Option<HitRecord> = None;
         let mut closest_so_far: f64 = t_max;
         for obj in &self.list {
-            match obj.hit(&r, t_min, closest_so_far) {
-                Some(rec) => {
-                    closest_so_far = rec.t;
-                    temp_rec.replace(rec);
-                }
-                None => {}
+            if let Some(rec) = obj.hit(&r, t_min, closest_so_far) {
+                closest_so_far = rec.t;
+                temp_rec.replace(rec);
             }
         }
         temp_rec
@@ -110,6 +127,11 @@ pub fn random_in_unit_sphere() -> Vec3 {
     }
     
     p.unwrap()
+}
+
+#[allow(unused_imports, dead_code)]
+pub fn reflect(v: &Vec3, n: &Vec3) -> Vec3 {
+    *v - 2_f64 * *n*(v.dot(n))
 }
 
 #[cfg(test)]

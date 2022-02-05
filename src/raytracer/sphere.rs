@@ -1,29 +1,31 @@
 mod sphere {
 
-    //use crate::{Hitable, Ray, HitRecord, HitWrapper};
-    use crate::{Hitable, Ray, HitRecord};
+    //use crate::{Hittable, Ray, HitRecord, HitWrapper};
+    use crate::{Hittable, Ray, HitRecord};
     use crate::raytracer::vec3::{Vec3, dot};
+    use crate::raytracer::materials::Material;
 
-    #[derive(Clone, Copy, Debug, PartialEq)]
+    //#[derive(Clone, PartialEq)]
     pub struct Sphere {
         center: Vec3,
         radius: f64,
-        //wrapper: crate::HitWrapper,
+        #[allow(dead_code)]
+        material: Option<Box<dyn Material>>,
     }
     
     impl Sphere{
         #[allow(dead_code)]
-        pub fn new(c: &Vec3, r: f64) -> Sphere {
+        pub fn new(c: &Vec3, r: f64, material: impl Material + 'static) -> Self {
             Sphere {
                 center: *c,
                 radius: r,
-                //wrapper: Sphere: crate::raytracer::sphere::Sphere,
+                material: Some(Box::new(material)),
             }
         }
         
     }
     
-    impl Hitable for Sphere {
+    impl Hittable for Sphere {
         fn hit(&self, r: &Ray,
             t_min: f64,
             t_max: f64) -> Option<HitRecord> {
@@ -33,24 +35,29 @@ mod sphere {
                 let b = dot(&oc, &r.direction());
                 let c = dot(&oc, &oc) - self.radius*self.radius;
                 let discriminant = b*b - a*c;
+                let disc_sq = discriminant.sqrt();
                 if discriminant > 0.0 {
-                    let mut temp = (-b - (b*b-a*c).sqrt())/a;
+                    let mut temp = (-b - disc_sq)/a;
                     if temp < t_max && temp > t_min {
                         let pat = r.point_at_parameter(temp);
                         rec.replace(HitRecord {
                             t: temp,
                             p: pat,
                             normal: (pat - self.center) / self.radius,
+                            front_face: false,
+                            material: self.material.as_ref().map(Box::as_ref),
                         });
                         return rec;
                     }
-                    temp = (-b + (b*b-a*c).sqrt())/a;
+                    temp = (-b + disc_sq)/a;
                     if temp < t_max && temp > t_min {
                         let pat = r.point_at_parameter(temp);
                         rec.replace( HitRecord{
                             t: temp,
                             p: pat,
                             normal: (pat - self.center) / self.radius,
+                            front_face: false,
+                            material: self.material.as_ref().map(Box::as_ref),
                         });
                         return rec;
                     }
@@ -71,7 +78,7 @@ use crate::raytracer::vec3::{Vec3, Point3};
 #[allow(unused_imports)]
 use crate::HitRecord;
 #[allow(unused_imports)]
-use crate::Hitable;
+use crate::Hittable;
 
 #[test]
 fn test_sphere_hit(){

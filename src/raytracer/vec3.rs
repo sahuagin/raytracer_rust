@@ -60,6 +60,10 @@ mod vec3 {
             *self / self.length()
         }   
         
+        pub fn normalize(&self) -> Self {
+            self.unit()
+        } 
+        
        
     }
 
@@ -72,17 +76,56 @@ pub use vec3::Point3;
 pub use vec3::unit_vector;
 pub use vec3::dot;
 
-impl ops::Add<Vec3> for vec3::Vec3 {
-    type Output = Self;
 
-    fn add(self, rhs: Self) -> Self{
-        Self{
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
-            z: self.z + rhs.z,
+macro_rules! impl_binop{
+    (VEC, $op_trait: ident, $fn_name: ident, $op:tt, $target: ident, $rhs: ident) => {
+        impl std::ops::$op_trait<$rhs> for $target {
+            type Output = $target;
+
+            fn $fn_name(self, rhs: $rhs) -> Self::Output {
+                $target {
+                    x: self.x $op rhs.x,
+                    y: self.y $op rhs.y,
+                    z: self.z $op rhs.z,
+                }
+            }
         }
-    }   
+    };
+    
+    (SCALAR, $op_trait: ident, $fn_name: ident, $op:tt, $target: ident, $rhs: ident) => {
+        impl std::ops::$op_trait<$rhs> for $target {
+            type Output = $target;
+
+            fn $fn_name(self, rhs: $rhs) -> Self::Output {
+                $target {
+                    x: self.x $op rhs,
+                    y: self.y $op rhs,
+                    z: self.z $op rhs,
+                }
+            }
+        }
+        
+        impl std::ops::$op_trait<$target> for $rhs {
+            type Output = $target;
+
+            fn $fn_name(self, rhs: $target) -> Self::Output {
+                $target {
+                    x: rhs.x $op self,
+                    y: rhs.y $op self,
+                    z: rhs.z $op self,
+                }
+            }
+        }
+    };
 }
+
+impl_binop!(VEC, Add, add, +, Vec3, Vec3);
+impl_binop!(VEC, Sub, sub, -, Vec3, Vec3);
+impl_binop!(VEC, Mul, mul, *, Vec3, Vec3);
+impl_binop!(VEC, Div, div, /, Vec3, Vec3);
+
+impl_binop!(SCALAR, Mul, mul, *, Vec3, f64);
+impl_binop!(SCALAR, Div, div, /, Vec3, f64);
 
 impl ops::Add<&Vec3> for vec3::Vec3 {
     type Output = Self;
@@ -115,18 +158,6 @@ impl ops::AddAssign<&Vec3> for vec3::Vec3 {
             z: self.z + rhs.z,
         }
     }
-}
-
-impl ops::Sub<Vec3> for vec3::Vec3 {
-    type Output = Self;
-    
-    fn sub(self, rhs: Self) -> Self{
-        Self{
-            x: self.x - rhs.x,
-            y: self.y - rhs.y,
-            z: self.z - rhs.z,
-        }
-    }   
 }
 
 impl ops::Sub<&Vec3> for vec3::Vec3 {
@@ -171,39 +202,6 @@ impl ops::MulAssign<f64> for vec3::Vec3 {
     }
 }
 
-impl ops::Mul<f64> for vec3::Vec3 {
-    type Output = Self;
-    fn mul(self, rhs: f64) -> Self {
-        Self {
-            x: self.x * rhs, 
-            y: self.y * rhs, 
-            z: self.z * rhs, 
-        }
-    }
-
-}
-
-impl ops::Mul<vec3::Vec3> for f64 {
-    type Output = vec3::Vec3;
-    fn mul(self, rhs: vec3::Vec3) -> vec3::Vec3 {
-        vec3::Vec3 {
-            x: rhs.x * self, 
-            y: rhs.y * self, 
-            z: rhs.z * self, 
-        }
-    }
-    
-}
-impl ops::Div<f64> for vec3::Vec3 {
-    type Output = Self;
-    fn div(self, rhs: f64) -> Self {
-        Self {
-            x: self.x / rhs,
-            y: self.y / rhs,
-            z: self.z / rhs,
-        }
-    }
-}
 impl ops::DivAssign<f64> for vec3::Vec3 {
     fn div_assign(&mut self, rhs: f64) {
         self.x /= rhs;
@@ -495,4 +493,14 @@ fn test_div() {
     let dv = 77.8;
 
     assert_eq!(v / dv, Vec3::new(v.x/dv, v.y/dv, v.z/dv));
+}
+
+#[test]
+fn test_mul_vectors() {
+    let vec = Vec3::new(1.0, 2.0, -3.0);
+    let vec2 = Vec3::new(5.0, 6.0, 7.0);
+    let ans = Vec3::new(5.0, 12.0, -21.0);
+
+    assert_eq!(vec*vec, ans);
+    assert_eq!(&vec*&vec, ans);
 }
