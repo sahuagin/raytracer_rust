@@ -131,7 +131,7 @@ pub fn random_in_unit_sphere() -> Vec3 {
 
 #[allow(unused_imports, dead_code)]
 pub fn reflect(v: &Vec3, n: &Vec3) -> Vec3 {
-    *v - 2_f64 * *n*(v.dot(n))
+    *v - (2_f64 * v.dot(n) * *n)
 }
 
 #[cfg(test)]

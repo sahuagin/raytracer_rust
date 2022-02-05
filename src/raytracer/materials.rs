@@ -1,4 +1,4 @@
-use crate::{HitRecord, Color, reflect, unit_vector, dot};
+use crate::{HitRecord, Color, reflect, unit_vector, dot, random_in_unit_sphere};
 use crate::raytracer::ray::Ray;
 pub trait Material: Send + Sync {
     fn scatter(&self, ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)>;
@@ -19,14 +19,18 @@ impl Lambertian {
 }
 
 impl Material for Lambertian {
-    fn scatter(&self, ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
-        let reflected = &reflect(&unit_vector(&ray_in.direction()), &rec.normal);
-        let scattered = Ray::new(&rec.p, &reflected);
+    fn scatter(&self, _ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
+        let target = rec.p + rec.normal + random_in_unit_sphere();
+        let scattered = Ray::new(&rec.p, &(target-&rec.p));
+        //let reflected = &reflect(&unit_vector(&ray_in.direction()), &rec.normal);
+        //let scattered = Ray::new(&rec.p, &reflected);
         let attenuation = self.albedo;
-        match dot(&scattered.direction(), &rec.normal) > 0.0 {
-            true =>  {return Some((attenuation, scattered));},
-        false => {return None;}
-        };
+        //match dot(&scattered.direction(), &rec.normal) > 0.0 {
+        //    true =>  {return Some((attenuation, scattered));},
+        //false => {return None;}
+        //};
+        return Some((attenuation, scattered));
+        
     }
     
     fn albedo(&self) -> Color {
@@ -51,10 +55,11 @@ impl Material for Metal {
         let reflected = &reflect(&unit_vector(&ray_in.direction()), &rec.normal);
         let scattered = Ray::new(&rec.p, &reflected);
         let attenuation = self.albedo;
-        match dot(&scattered.direction(), &rec.normal) > 0.90 {
-            true => { return Some((attenuation, scattered));},
-            false => {return None;},
+        
+        if dot(&scattered.direction(), &rec.normal) > 0.0 {
+            return Some((attenuation, scattered));
         }
+        return None;
     }
     
     fn albedo(&self) -> Color {
