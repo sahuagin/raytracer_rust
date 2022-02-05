@@ -135,6 +135,21 @@ pub fn reflect(v: &Vec3, n: &Vec3) -> Vec3 {
     *v - (2_f64 * v.dot(n) * *n)
 }
 
+
+#[allow(unused_imports, dead_code)]
+pub fn refract(v: &Vec3, n: Vec3, ni_over_nt: f64) -> Option<Vec3> {
+    let uv = v.unit();
+    let dt:f64 = uv.dot(&n);
+    let discriminant = 1.0 - ni_over_nt * ni_over_nt*(1_f64-dt*dt);
+    if discriminant > 0.0 {
+        let refracted = ni_over_nt*(uv - n*dt) - n * discriminant.sqrt();
+        return Some(refracted);
+    }
+    else {
+        return None;
+    }
+}
+
 #[cfg(test)]
 
 #[test]
