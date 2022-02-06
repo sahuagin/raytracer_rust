@@ -29,6 +29,17 @@ mod ray
     }
 }
 
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! ray2{
+    ($pt1: expr, $pt2: expr) => {
+        Ray::new($pt1, $pt2)
+    }
+}
+
+#[allow(unused_imports)]
+//pub(crate) use ray2;
+
 #[cfg(test)]
 use crate::raytracer::vec3::Vec3;
 pub use ray::Ray;

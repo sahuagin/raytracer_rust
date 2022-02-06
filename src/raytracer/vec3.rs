@@ -76,6 +76,25 @@ pub use vec3::Point3;
 pub use vec3::unit_vector;
 pub use vec3::dot;
 
+#[allow(unused_macros)]
+#[macro_export]
+macro_rules! vect{
+    ($x: expr, $y: expr, $z: expr) => {
+        Vec3::new($x, $y, $z)
+    }
+}
+//pub(crate) use vect;
+
+#[macro_export]
+#[allow(unused_macros)]
+macro_rules! color{
+    ($x: expr, $y: expr, $z: expr) => {
+        vect!($x, $y, $z)
+    }
+}
+#[allow(unused_imports)]
+//pub(crate) use color;
+
 
 macro_rules! impl_binop{
     (VEC, $op_trait: ident, $fn_name: ident, $op:tt, $target: ident, $rhs: ident) => {
