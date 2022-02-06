@@ -2,7 +2,8 @@ pub mod raytracer;
 use rand::Rng;
 use self::raytracer::ray::{Ray};
 use self::raytracer::vec3::{Vec3, Color, unit_vector, dot};
-use self::raytracer::materials::{Material};
+use self::raytracer::materials::{Material, Lambertian, Dielectric};
+use self::raytracer::sphere::Sphere;
 
 #[allow(unused_imports, dead_code)]
 pub fn color(ray: &Ray, world: &HitList, depth: i32) -> Color {
@@ -160,6 +161,44 @@ pub fn refract(v: &Vec3, n: Vec3, ni_over_nt: f64) -> Option<Vec3> {
     else {
         return None;
     }
+}
+
+#[allow(unused_imports, dead_code)]
+pub fn random_scene() -> HitList {
+    let mut rng = rand::thread_rng();
+    let mut hl: HitList = HitList::new();
+    hl.add(Sphere::new(&vect!(0.0, -1000.0, 0.0), 1000.0, Lambertian::new(&vect!(0.5, 0.5, 0.5))));
+    for a in -11..11 {
+        for b in -11..11 {
+            let choose_mat = rng.gen::<f64>();
+            let center: Vec3 = vect!(a as f64 + 0.9 * rng.gen::<f64>(), 0.2,
+                                     b as f64 + 0.9*rng.gen::<f64>());
+            if (center - vect!(4.0, 0.2, 0.0)).length() > 0.9 {
+                if choose_mat < 0.8 { // diffuse
+                    hl.add(Sphere::new(&center, 0.2, Lambertian::new(
+                        &vect!(rng.gen::<f64>()*rng.gen::<f64>(),
+                            rng.gen::<f64>()*rng.gen::<f64>(),
+                            rng.gen::<f64>()*rng.gen::<f64>()))));
+                }
+                else if choose_mat < 0.95 { // metal
+                    hl.add(Sphere::new(&center, 0.2, Metal::new( &vect!(
+                        0.5 * (1.0 + rng.gen::<f64>()),
+                        0.5 * (1.0 + rng.gen::<f64>()),
+                        0.5 * (1.0 + rng.gen::<f64>())),
+                        0.5 * rng.gen::<f64>())));
+                }
+                else { // glass
+                    hl.add(Sphere::new(&center, 0.2, Dielectric::new(1.5)));
+                }
+            }
+        }
+    }
+    
+    hl.add(Sphere::new( &vect!(0.0, 1.0, 0.0), 1.0, Dielectric::new(1.5)));
+    hl.add(Sphere::new( &vect!(-4.0, 1.0, 0.0), 1.0, Lambertian::new( &vect!(0.4, 0.2, 0.1))));
+    hl.add(Sphere::new( &vect!(4.0, 1.0, 0.0), 1.0, Metal::new(&vect!(0.7, 0.6, 0.5), 0.0)));
+    
+    hl
 }
 
 #[cfg(test)]
