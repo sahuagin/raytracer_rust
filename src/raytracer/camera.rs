@@ -21,6 +21,7 @@ mod camera {
         p
     }
     
+    #[derive(Clone, Copy, Debug)]
     #[allow(unused_imports, dead_code)]
     pub struct Camera {
         pub origin: Vec3,

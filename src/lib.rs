@@ -1,4 +1,5 @@
 pub mod raytracer;
+use std::io::{self, Write};
 use rand::Rng;
 use self::raytracer::ray::{Ray};
 use self::raytracer::vec3::{Vec3, Color, unit_vector, dot};
@@ -29,6 +30,33 @@ pub fn color(ray: &Ray, world: &HitList, depth: i32) -> Color {
     let t = 0.5 * (unit_direction.y + 1.0);
     (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
 }
+
+#[allow(unused_imports, dead_code)]
+pub fn write_color(
+    stream: &mut impl Write,
+    pixel_color: Color,
+    samples_per_pixel: i32,
+) -> Result<(), io::Error> {
+    let mut r = pixel_color.x;
+    let mut g = pixel_color.y;
+    let mut b = pixel_color.z;
+
+    // Divide the color by the number of samples
+    let scale = 1.0 / samples_per_pixel as f64;
+    r = (scale * r).sqrt();
+    g = (scale * g).sqrt();
+    b = (scale * b).sqrt();
+    
+    writeln!(
+        stream,
+        "{} {} {}",
+        ((r * (u8::MAX as f64 * 1.)) as i32).clamp(0, u8::MAX as i32),
+        ((g * (u8::MAX as f64 * 1.)) as i32).clamp(0, u8::MAX as i32),
+        ((b * (u8::MAX as f64 * 1.)) as i32).clamp(0, u8::MAX as i32)
+    )
+    .map(|_| ())
+}
+
 
 #[allow(unused_imports, dead_code)]
 pub fn hit_sphere(center: &Point3, radius: f64, r: &Ray) -> f64 {
@@ -108,6 +136,18 @@ impl HitList {
         }
     }
     
+    pub fn from_hittable(object: impl Hittable + Sync + Send + 'static) -> HitList {
+        let mut list = HitList {
+            list: Vec::new(),
+        };
+        list.add(object);
+        list
+    }
+    
+    pub fn clear(&mut self) {
+        self.list.clear()
+    }
+    
     pub fn add(&mut self, object: impl Hittable + Sync + Send + 'static){
         self.list.push(Box::new(object))
     }
@@ -164,8 +204,7 @@ pub fn refract(v: &Vec3, n: Vec3, ni_over_nt: f64) -> Option<Vec3> {
 }
 
 #[allow(unused_imports, dead_code)]
-pub fn random_scene() -> HitList {
-    let mut rng = rand::thread_rng();
+pub fn random_scene(rng: &mut impl rand::Rng) -> HitList {
     let mut hl: HitList = HitList::new();
     hl.add(Sphere::new(&vect!(0.0, -1000.0, 0.0), 1000.0, Lambertian::new(&vect!(0.5, 0.5, 0.5))));
     for a in -11..11 {
