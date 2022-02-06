@@ -17,14 +17,14 @@ fn main() {
     // do a depth of 50.
     // NOTE: 2000x1000 takes about 40 minutes at this point
     // only 92s as of this commit. Run in release instead of debug.
-    let nx = 500; //800; // image width
-    let ny = 250; //600; // image height
+    let nx = 2000; //800; // image width
+    let ny = 1000; //600; // image height
     let ns = 500;  // number of anti-aliasing samples
     const MAX_DEPTH: i32 = 500;
     //let radian: f64 = (std::f64::consts::PI/4.0).cos();
-    let vfov: f64 = 17.0;
+    let vfov: f64 = 8.0;
     let aspect: f64 = nx as f64 / ny as f64;
-    let look_from = vect!(14.0, 2.0, 2.5);
+    let look_from = vect!(24.0, 2.5, 5.0);
     let look_at   = vect!(3.0, 0.75, 0.75);
     let vup       = vect!(0.0, 1.0, 0.0);
     let dist_to_focus: f64 = (look_from-look_at).length();
