@@ -19,32 +19,30 @@ fn main() {
     let ny = 1000; // image height
     let ns = 100;  // number of anti-aliasing samples
     const MAX_DEPTH: i32 = 50;
-    let radian: f64 = (std::f64::consts::PI/4.0).cos();
-    let vfov: f64 = 90.0;
+    //let radian: f64 = (std::f64::consts::PI/4.0).cos();
+    let vfov: f64 = 20.0;
     let aspect: f64 = nx as f64 / ny as f64;
-    let look_from = vect!(1.0, 1.0, 1.0);
-    let look_at   = vect!(1.0, 1.0, -1.0);
+    let look_from = vect!(-2.0, 2.0, 1.0);
+    let look_at   = vect!(0.0, 0.0, -1.0);
     let vup       = vect!(0.0, 1.0, 0.0);
     
     let mut world = HitList::new();
     // chapter 10, camera
-    world.list.push(Box::new(Sphere::new(&vect!(-radian, 0.0, -1.0), radian,
-                    Lambertian::new(&vect!(0.0, 0.0, 1.0)))));
-    world.list.push(Box::new(Sphere::new(&vect!(radian, 0.0, -1.0), radian,
-                    Lambertian::new(&vect!(1.0, 0.0, 0.0)))));
+    //world.list.push(Box::new(Sphere::new(&vect!(-radian, 0.0, -1.0), radian,
+    //                Lambertian::new(&vect!(0.0, 0.0, 1.0)))));
+    //world.list.push(Box::new(Sphere::new(&vect!(radian, 0.0, -1.0), radian,
+    //                Lambertian::new(&vect!(1.0, 0.0, 0.0)))));
 
     
     // From end of chapter 9
-    //world.list.push(Box::new(Sphere::new(&Vec3::new(0.0, 0.0, -1.0), 0.5,
-    //                                    Lambertian::new(&Color::new(0.1, 0.2, 0.5)))));
-    //world.list.push(Box::new(Sphere::new(&Vec3::new(0.0,-100.5, -1.0), 100.0,
-    //                                    Lambertian::new(&Color::new(0.8, 0.8, 0.0)))));
-    //world.list.push(Box::new(Sphere::new(&Vec3::new(1.0,0.0,-1.0),0.5,
-    //                                    Metal::new(&Color::new(0.8, 0.6, 0.2), 0.2))));
-    //world.list.push(Box::new(Sphere::new(&Vec3::new(-1.0,0.0,-1.0), 0.5,
-    //                                    Dielectric::new(1.5))));
-    //world.list.push(Box::new(Sphere::new(&Vec3::new(-1.0,0.0,-1.0), -0.45,
-    //                                    Dielectric::new(1.5))));
+    world.list.push(Box::new(Sphere::new(&Vec3::new(0.0, 0.0, -1.0), 0.5,
+                                        Lambertian::new(&Color::new(0.1, 0.2, 0.5)))));
+    world.list.push(Box::new(Sphere::new(&Vec3::new(0.0,-100.5, -1.0), 100.0,
+                                        Lambertian::new(&Color::new(0.8, 0.8, 0.0)))));
+    world.list.push(Box::new(Sphere::new(&Vec3::new(1.0,0.0,-1.0),0.5,
+                                        Metal::new(&Color::new(0.8, 0.6, 0.2), 0.2))));
+    world.list.push(Box::new(Sphere::new(&Vec3::new(-1.0,0.0,-1.0), 0.5,
+                                        Dielectric::new(1.5))));
     // an interesting and easy trick with dielectric spheres is to note that if you use a 
     // negative radius, the geometry is unaffected but the surface normal
     // points inward, so it can be used as a bubble to make a hollow glass sphere.
