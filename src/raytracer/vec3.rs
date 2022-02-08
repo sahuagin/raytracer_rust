@@ -2,12 +2,19 @@ mod vec3 {
     pub use Vec3 as Point3;
     pub use Vec3 as Color;
     
-    #[derive(Clone, Copy, Debug, Default, PartialEq)]
+    #[derive(Clone, Copy, Debug, PartialEq)]
     pub struct Vec3 {
         pub x: f64,
         pub y: f64,
         pub z: f64,
     }
+    
+    impl Default for Vec3 {
+        fn default() -> Self {
+            Vec3{x: 0.0, y: 0.0, z:0.0}
+        }
+    }
+    
 
     #[allow(unused_imports, dead_code)]
     pub fn unit_vector(v: &Vec3) -> Vec3 {

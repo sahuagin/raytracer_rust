@@ -9,7 +9,7 @@ use rayon::prelude::*;
 
 use crate::rt_rs::{vect, raytracer::vec3::{Vec3, Color}};
 #[allow(unused_imports)]
-use crate::rt_rs::{color, write_color, HitList, random_scene};
+use crate::rt_rs::{color, write_color, random_scene};
 #[allow(unused_imports)]
 use crate::rt_rs::raytracer::sphere::Sphere;
 use crate::rt_rs::raytracer::camera::Camera;
@@ -76,7 +76,9 @@ fn main() {
                         vfov,
                         ASPECT_RATIO,
                         APERTURE,
-                        dist_to_focus);
+                        dist_to_focus,
+                        0.0,
+                        0.0);
 
     
     // Render

@@ -1,6 +1,6 @@
 mod camera {
     #[allow(unused_imports)]
-    use crate::{ray2, Ray};
+    use crate::{ray, Ray};
     #[allow(unused_imports)]
     use crate::{vect, raytracer::vec3::{Vec3}};
     use crate::{unit_vector};
@@ -32,6 +32,9 @@ mod camera {
         pub v: Vec3,
         pub w: Vec3,
         pub lens_radius: f64,
+        // shutter open/close times
+        time0: f64,
+        time1: f64,
     }
     
     impl Camera {
@@ -43,7 +46,9 @@ mod camera {
                 vfov: f64,
                 aspect: f64,
                 aperture: f64,
-                focus_dist: f64) -> Camera {
+                focus_dist: f64,
+                shutter_open: f64,
+                shutter_close: f64,) -> Camera {
             let lens_radius = aperture / 2.0;
             let theta: f64 = vfov*std::f64::consts::PI/180.0;
             let half_height: f64 = (theta/2.0).tan();
@@ -64,6 +69,8 @@ mod camera {
                 v: v,
                 w: w,
                 lens_radius: lens_radius,
+                time0: shutter_open,
+                time1: shutter_close,
             }
         }
         
@@ -71,10 +78,11 @@ mod camera {
         pub fn get_ray(&self, s: f64, t: f64) -> Ray {
             let rd: Vec3 = self.lens_radius * random_in_unit_disk();
             let offset: Vec3 = self.u * rd.x + self.v * rd.y;
-            Ray {
-                a: self.origin + offset,
-                b: self.lower_left_corner + self.horizontal*s + self.vertical*t - self.origin - offset, // changed the mult order so it didn't try to dereference self
-            }
+            let mut rng = rand::thread_rng();
+            let time = self.time0 + rng.gen::<f64>() * (self.time1-self.time0);
+            ray!( &(self.origin + offset),
+                &(self.lower_left_corner + self.horizontal*s + self.vertical*t - self.origin - offset), // changed the mult order so it didn't try to dereference self
+                time)
         }
     }
 }
@@ -98,7 +106,7 @@ fn test_camera_new() {
     let c = Camera::new(look_from,
                         look_at,
                         vup,
-                        vfov, aspect, aperture, dist_to_focus);
+                        vfov, aspect, aperture, dist_to_focus, 0.0, 0.0);
     let llc = vect!(-2.9999999999999996, -0.9999999999999998, -1.0);
     let horizon = vect!(7.999999999999999, -0.0, 0.0);
     let vert = vect!(0.0, 3.9999999999999996, -0.0);
@@ -111,7 +119,7 @@ fn test_camera_new() {
 }
 
 #[allow(unused_imports)]
-use crate::{ray2};
+use crate::{ray};
 #[allow(unused_imports)]
 use crate::raytracer::ray::Ray;
 #[allow(unused_imports)]
@@ -130,12 +138,12 @@ fn test_get_ray() {
     let c = Camera::new(look_from,
                         look_at,
                         vup,
-                        vfov, aspect, aperture, dist_to_focus);
+                        vfov, aspect, aperture, dist_to_focus, 0.0, 0.0);
  
     let r = c.get_ray(4.0, 2.0);
     // this is now random, so it'll change every time!
     //let ans: raytracer::ray::Ray = raytracer::ray::Ray::new(&raytracer::vec3::Vec3::new(0.0, 0.0, 0.0), &raytracer::vec3::Vec3::new(14.0, 3.0, -1.0));
-    let ans = ray2!( &vect!(1.6712465080623153, 1.3039624788267186, 1.0 ),
+    let ans = ray!( &vect!(1.6712465080623153, 1.3039624788267186, 1.0 ),
                      &vect!(7.328753491937682, 5.696037521173281, -2.0 ));
 
     //Ray { a: Vec3 { x: 1.1474845657837764, y: 0.5490526987309197, z: 1.0 }, b: Vec3 { x: 27.85251543421622, y: 6.450947301269079, z: -2.0 } }
