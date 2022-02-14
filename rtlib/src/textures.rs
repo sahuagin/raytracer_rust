@@ -1,4 +1,4 @@
-use crate::raytracer::vec3::{Vec3, Color};
+use super::vec3::{Vec3, Color};
 
 pub trait Texture: {
     fn value(&self, u: f64, v: f64, p: &Vec3) -> Color; 
@@ -81,13 +81,6 @@ impl Clone for Box<dyn Texture > {
     }
 }
 
-#[macro_export]
-macro_rules! wrap_texture {
-    ($klass:ty, $p0:expr) => {
-        raytracer::textures::TextureType::$klass($p0)
-    }
-}
-
 
 #[derive(Copy, Clone)]
 pub struct ConstantTexture {
@@ -121,25 +114,25 @@ impl Texture for ConstantTexture {
     }
 }
 
-#[allow(unused_macros, unused_imports)]
-#[macro_export]
-macro_rules! color_to_texture{
-    ($col:expr) => {
-        TextureType::ConstantTexture(
-            ConstantTexture::new(0.0, 0.0, $col))
-    }
-}
-
-macro_rules! texture_display{
-    ($klass:ty) => {
-        #[allow(dead_code)]
-        impl std::fmt::Display for $klass {
-            fn fmt(&self, f:&mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-                self.inner_fmt(f)
-            }
-        }
-    }
-}
-
-texture_display!(dyn Texture);
-texture_display!(ConstantTexture);
+//#[allow(unused_macros, unused_imports)]
+//#[macro_export]
+//macro_rules! color_to_texture{
+//    ($col:expr) => {
+//        TextureType::ConstantTexture(
+//            ConstantTexture::new(0.0, 0.0, $col))
+//    }
+//}
+//
+//macro_rules! texture_display{
+//    ($klass:ty) => {
+//        #[allow(dead_code)]
+//        impl std::fmt::Display for $klass {
+//            fn fmt(&self, f:&mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+//                self.inner_fmt(f)
+//            }
+//        }
+//    }
+//}
+//
+//texture_display!(dyn Texture);
+//texture_display!(ConstantTexture);

@@ -1,13 +1,9 @@
 [package]
-name = "rtlib"
+name = "rtmacros"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rand = {version = "0.8.4"}
-
-[lib]
-name = "rtlib"
-path = "src/lib.rs"
+rtlib = {path="../rtlib/"}

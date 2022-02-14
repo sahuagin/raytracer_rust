@@ -1,7 +1,8 @@
-use crate::{Color, reflect, refract, unit_vector, dot, random_in_unit_sphere};
-use crate::raytracer::hittable::HitRecord;
-use crate::raytracer::ray::Ray;
-use crate::raytracer::textures::{ConstantTexture, Texture, TextureType, NoneTexture};
+use super::util::{reflect, refract, random_in_unit_sphere};
+use super::vec3::{Color, dot, unit_vector};
+use super::hittable::HitRecord;
+use super::ray::Ray;
+use super::textures::{ConstantTexture, Texture, TextureType, NoneTexture};
 use rand::Rng;
 
 pub trait Material: {
@@ -131,15 +132,6 @@ mat_display!(dyn Material);
 //        }
 //    }
 //}
-
-#[macro_export]
-macro_rules! wrap_material {
-    ($klass:ident, $($p0:expr),*) => {
-        raytracer::materials::MaterialType::$klass(
-            $klass::new(
-                $( $p0, )*))
-    }
-}
 
 #[derive(Copy, Clone)]
 pub struct Lambertian {

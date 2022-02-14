@@ -1,9 +1,9 @@
 #[allow(unused_imports)]
-use crate::raytracer::materials::{MaterialType,Material};
-use crate::raytracer::ray::Ray;
-use crate::raytracer::vec3::{Point3, Vec3};
-use crate::raytracer::sphere::{Sphere, MovingSphere};
-use crate::raytracer::hitlist::HitList;
+use super::materials::{MaterialType,Material};
+use super::ray::Ray;
+use super::vec3::{Point3, Vec3};
+use super::sphere::{Sphere, MovingSphere};
+use super::hitlist::HitList;
 
 #[allow(unused_imports, dead_code)]
 pub trait Hittable {
@@ -41,15 +41,7 @@ impl Hittable for Hitters {
     }
 }
 
-#[macro_export]
-macro_rules! wrap_hitter {
-    ($klass:item, $($p:expr),*) => {
-        $crate::raytracer::hittable::Hitters::$klass(
-            $klass::new(
-                $( $p, )*))
-    }
-}
-    
+   
 #[derive(Clone, Copy, Default)]
 pub struct NoBatter;
 impl Hittable for NoBatter {

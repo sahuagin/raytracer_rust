@@ -1,16 +1,20 @@
-pub mod raytracer;
+//#[allow(unused_attributes)]
+//#[macro_use]
+use super::{vect,color_to_texture,wrap_material};
+use crate::hittable::Hittable;
+#[allow(unused_imports)]
 use std::io::{self, Write};
 use rand::Rng;
-use self::raytracer::ray::{Ray};
-use self::raytracer::vec3::{Vec3, Color, unit_vector, dot};
-use self::raytracer::materials::{Material, MaterialType, Lambertian, Dielectric};
-use crate::sphere::Sphere;
-use self::raytracer::textures::{ConstantTexture, TextureType };
-use crate::raytracer::hittable::{Hittable, Hitters};
-use crate::raytracer::hitlist::HitList;
+use super::ray::{Ray};
+use super::vec3::{Vec3, Color, unit_vector, dot, Point3};
+use super::materials::{Material, MaterialType, Lambertian, Dielectric, Metal};
+use super::sphere::Sphere;
+//use super::textures::{ConstantTexture, TextureType };
+use super::hittable::{Hitters};
+use super::hitlist::HitList;
 
 #[allow(unused_imports, dead_code)]
-fn optional_arg<T>(thing: Option<T>) -> T
+pub fn optional_arg<T>(thing: Option<T>) -> T
 where T: Default {
     thing.unwrap_or_default()
 }
@@ -114,7 +118,6 @@ pub fn refract(v: &Vec3, n: Vec3, ni_over_nt: f64) -> Option<Vec3> {
         return None;
     }
 }
-
 #[allow(unused_imports, dead_code)]
 pub fn random_scene(rng: &mut impl rand::Rng) -> HitList {
     let mut hl: HitList = HitList::new();
@@ -183,9 +186,15 @@ pub fn random_scene_with_time() {
     //list.add(sphere!(&vect!(0.0, -1_000.0, 0.0), 1_000, Lambertian::new(checker)));
 
 }
-
 #[cfg(test)]
-
+mod test {
+use super::super::{ray, wrap_material, color_to_texture};
+#[allow(unused_imports)]
+use crate::vec3::{Vec3,Color};
+use crate::hittable::Hittable;
+use crate::hitlist::HitList;
+use crate::hittable::{Hitters, HitRecord};
+use crate::sphere::Sphere;
 #[test]
 fn test_color() {
     let v = Vec3::new(0.0, 0.0, 0.0);
@@ -193,9 +202,10 @@ fn test_color() {
     let r = ray!(&v, &v2);
     let ans = Color { x: 0.8943375672974064, y: 0.9366025403784438, z: 1.0 };
     let mut world = HitList::new();
-    let metal = wrap_material!(Metal::new( color_to_texture!(&Color::new(1.0, 1.0, 1.0)), 0.0));
+    let metal = wrap_material!(Metal,
+                               color_to_texture!(&Color::new(1.0, 1.0, 1.0)), 0.0);
     world.list.push(Hitters::Sphere(Sphere::new(&Vec3::new(2.0, 2.0, 2.0), 3.0,metal)));
-    let c = color(&r, &world, 100);
+    let c = crate::util::color(&r, &world, 100);
     // so, now that the world has a depth, and there are random bounces for refraction,
     // this becomes a whole lot more difficult to test. Even giving it perfect reflection
     // surface (metal, all white, no fuzz) it'll return some random bounces.
@@ -208,11 +218,11 @@ fn test_color() {
 }
 
 #[allow(unused_imports)]
-use crate::raytracer::vec3::Point3;
+use crate::vec3::Point3;
 #[allow(unused_imports)]
-use crate::raytracer::sphere;
+use crate::sphere;
 #[allow(unused_imports)]
-use self::raytracer::materials::{Metal};
+use crate::materials::{Metal};
 #[test]
 fn test_hitlist() {
     let _ans = true;
@@ -223,8 +233,8 @@ fn test_hitlist() {
     let r   = ray!(&pt1, &pt2);
     let center = Point3::new(2.0, 2.0, 2.0);
     let radius = 3.0;
-    let metal = wrap_material!(Metal::new(
-        color_to_texture!(&Color::new(1.0, 1.0, 1.0)), 1.0));
+    let metal = wrap_material!(Metal,
+        color_to_texture!(&Color::new(1.0, 1.0, 1.0)), 1.0);
     let metal2 = metal;
     let s   = Hitters::Sphere(Sphere::new(&center, radius, metal));
     let hitrec = Some(HitRecord { t: 0.26794919243112264,
@@ -235,12 +245,12 @@ fn test_hitlist() {
                                     y: -0.5773502691896258,
                                     z: -0.5773502691896258 },
                                 front_face: false,
-                                material: Some(&metal2),
+                                material: metal2,
                             });
 
     // then, we'll push the sphere into the HitList
     let mut hl = HitList::new();
-    hl.list.push(Box::new(s));
+    hl.list.push(s);
     // this should have 2 hits, but we'll return the closest one
     let hit_ans = hl.hit(&r, 0.0, 4.0);
     println!("{}", hit_ans.unwrap());
@@ -256,5 +266,7 @@ fn test_reflect() {
     let v2 = Vec3::new(4.0,2.0,3.0);
     let ans = Vec3::new(-22.0, -13.0, -19.0);
     
-    assert_eq!(reflect(&v1,&v2), ans);   
+    assert_eq!(crate::util::reflect(&v1,&v2), ans);   
+}
+
 }

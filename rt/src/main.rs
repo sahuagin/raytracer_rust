@@ -1,5 +1,10 @@
-extern crate rt_rs;
+#[allow(unused_imports)]
 use rand::Rng;
+use rtlib;
+// how it's done in scopeguard
+//#[macro_use(vect)] extern crate rtmacros;
+// also works?
+use rtmacros::{vect};
 use std:: {
     io::{stderr, Write},
     sync::Arc,
@@ -7,14 +12,14 @@ use std:: {
 
 use rayon::prelude::*;
 
-use crate::rt_rs::{vect, raytracer::vec3::{Vec3, Color}};
+use rtlib::vec3::{Color};
 #[allow(unused_imports)]
-use crate::rt_rs::{color, write_color, random_scene};
+use rtlib::util::{color, write_color, random_scene};
 #[allow(unused_imports)]
-use crate::rt_rs::raytracer::sphere::Sphere;
-use crate::rt_rs::raytracer::camera::Camera;
+use rtlib::sphere::Sphere;
+use rtlib::camera::Camera;
 #[allow(unused_imports)]
-use crate::rt_rs::raytracer::materials::{Lambertian, Metal, Dielectric};
+use rtlib::materials::{Lambertian, Metal, Dielectric};
 
 fn main() {
     // For error handling
@@ -41,9 +46,9 @@ fn main() {
     const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
     const NUM_PIXELS: i32 = IMAGE_WIDTH * IMAGE_HEIGHT;
 
-    let look_from = vect!(24.0, 2.5, 5.0);
-    let look_at   = vect!(3.0, 0.75, 0.75);
-    let vup       = vect!(0.0, 1.0, 0.0);
+    let look_from = vect!(25.0, 2.5, 5.0);
+    let look_at   = rtmacros::vect!(3.0, 0.75, 0.75);
+    let vup       = rtmacros::vect!(0.0, 1.0, 0.0);
     let dist_to_focus: f64 = (look_from-look_at).length();
     const APERTURE: f64 = 0.2;
     

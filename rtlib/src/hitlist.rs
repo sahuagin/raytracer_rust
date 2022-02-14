@@ -1,6 +1,6 @@
 #[allow(unused_imports)]
-use crate::raytracer::hittable::{Hittable, HitRecord, Hitters};
-use crate::raytracer::ray::Ray;
+use super::hittable::{Hittable, HitRecord, Hitters};
+use super::ray::Ray;
 
 #[allow(unused_imports, dead_code)]
 #[derive(Default, Clone)]

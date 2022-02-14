@@ -1,7 +1,7 @@
-use crate::raytracer::hittable::{Hittable, HitRecord};
-use crate::raytracer::vec3::{Vec3, dot};
-use crate::raytracer::materials::{MaterialType};
-use crate::raytracer::ray::Ray;
+use super::hittable::{Hittable, HitRecord};
+use super::vec3::{Vec3, dot};
+use super::materials::{MaterialType};
+use super::ray::Ray;
 
 
 #[derive(Copy, Clone)]
@@ -10,14 +10,6 @@ pub struct Sphere {
     radius: f64,
     #[allow(dead_code)]
     material: MaterialType,
-}
-
-#[allow(unused_macros)]
-#[macro_export]
-macro_rules! sphere{
-    ($c:expr, $r:expr, $mat:expr) => {
-        Sphere::new($c, $r, Some($mat) )
-    };
 }
 
 impl Sphere{
@@ -158,44 +150,48 @@ impl Hittable for MovingSphere {
 }
 
 #[cfg(test)]
-
+mod test {
 #[allow(unused_imports)]
-use crate::raytracer::ray::{Ray};
+use crate::ray::{Ray};
 #[allow(unused_imports)]
-use crate::raytracer::vec3::{Point3,Color};
+use crate::vec3::{Point3,Color,Vec3};
 #[allow(unused_imports)]
-use crate::raytracer::materials::{Lambertian};
+use crate::materials::{Lambertian, MaterialType};
 #[allow(unused_imports)]
 use crate::color_to_texture;
 #[allow(unused_imports)]
-use crate::raytracer::textures::ConstantTexture;
+use crate::textures::ConstantTexture;
+use crate::sphere::Sphere;
+use crate::hittable::HitRecord;
+use crate::hittable::Hittable;
 
-#[test]
-fn test_sphere_hit(){
-    let pt1 = Point3::new(0.0,0.0,0.0);
-    let pt2 = Point3::new(1.0,1.0,1.0);
-    let l   = Box::new(Lambertian::new( &color_to_texture!(&Color::new(0.1, 0.8, 0.1))));
-    let r   = Ray::new(&pt1, &pt2, None);
-    let center = Point3::new(2.0, 2.0, 2.0);
-    let radius = 3.0;
-    let s   = sphere::Sphere::new(
-        &center, radius, l);
-    let hitrec = HitRecord { t: 0.26794919243112264,
-                                p: Vec3 { x: 0.26794919243112264,
-                                        y: 0.26794919243112264,
-                                        z: 0.26794919243112264 },
-                                normal: Vec3 { x: -0.5773502691896258,
-                                    y: -0.5773502691896258,
-                                    z: -0.5773502691896258 },
-                                front_face: false,
-                                material: l,
-                                };
+    #[test]
+    fn test_sphere_hit(){
+        let pt1 = Point3::new(0.0,0.0,0.0);
+        let pt2 = Point3::new(1.0,1.0,1.0);
+        let l   = MaterialType::Lambertian(Lambertian::new( &color_to_texture!(&Color::new(0.1, 0.8, 0.1))));
+        let r   = Ray::new(&pt1, &pt2, None);
+        let center = Point3::new(2.0, 2.0, 2.0);
+        let radius = 3.0;
+        let s   = Sphere::new(
+            &center, radius, l);
+        let hitrec = HitRecord { t: 0.26794919243112264,
+                                    p: Vec3 { x: 0.26794919243112264,
+                                            y: 0.26794919243112264,
+                                            z: 0.26794919243112264 },
+                                    normal: Vec3 { x: -0.5773502691896258,
+                                        y: -0.5773502691896258,
+                                        z: -0.5773502691896258 },
+                                    front_face: false,
+                                    material: l,
+                                    };
 
-    // this should have 2 hits, but we'll return the closest one
-    if let Some(result) = s.hit(&r, 0.0, 4.0){
-        println!("the result front_face: {}", result.front_face );
-        assert_eq!(result.t, hitrec.t);
-        println!("the result front_face: {}", result);
+        // this should have 2 hits, but we'll return the closest one
+        if let Some(result) = s.hit(&r, 0.0, 4.0){
+            println!("the result front_face: {}", result.front_face );
+            assert_eq!(result.t, hitrec.t);
+            println!("the result front_face: {}", result);
+        }
+        //println!("the result front_face: {}", result.material);
     }
-    //println!("the result front_face: {}", result.material);
 }
