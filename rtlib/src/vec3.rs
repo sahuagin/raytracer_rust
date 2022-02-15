@@ -1,12 +1,37 @@
+//#![feature(associated_type_bounds)]
 #[allow(unused_imports)]
 pub use Vec3 as Point3;
 pub use Vec3 as Color;
+use num_traits::float;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Vec3 {
-    pub x: f64,
-    pub y: f64,
-    pub z: f64,
+//pub struct Vec3T<T, X: Into<T>, Y: Into<T>, Z: Into<T>>
+//where T: From<X> + From<Y> + From<Z> {
+//pub struct Vec3T<T: float::Float +
+//                    std::ops::MulAssign +
+//                    std::ops::Mul +
+//                    std::ops::Add + 
+//                    std::ops::Sub +
+//                    std::ops::Div +
+//                    std::ops::AddAssign +
+//                    std::ops::SubAssign +
+//                    std::ops::DivAssign> {
+pub struct Vec3T<T: float::Float + std::fmt::Display > {
+    pub x: T,
+    pub y: T,
+    pub z: T,
+}
+
+trait Vector3Trait{
+    type Base;
+}
+
+
+pub type Vec3 = Vec3T::<f64>;
+// I want to use this in the std::op::Mul so that I can do the 'float * vec' version
+// as well as the 'vec3 * float' version we already have
+impl Vector3Trait for Vec3{
+    type Base = f64;
 }
 
 impl Default for Vec3 {
@@ -34,30 +59,44 @@ pub fn dot(v1: &Vec3, v2: &Vec3) -> f64 {
   //     }
   // }
 
-impl Vec3 {
+impl<T: float::Float +
+        std::ops::MulAssign +
+        std::ops::Mul +
+        std::ops::Add + 
+        std::ops::Sub +
+        std::ops::Div +
+        std::ops::AddAssign +
+        std::ops::SubAssign +
+        std::ops::DivAssign +
+        std::fmt::Display> 
+ Vec3T<T> where f64: From<T> {
     #[allow(unused_imports, dead_code)]
-    pub fn new(x: f64, y: f64, z: f64) -> Vec3 {
-        Vec3 {x,y,z}
+    pub fn new<X: Into<T>,Y: Into<T>,Z: Into<T>> (x: X, y: Y, z: Z) -> Vec3T::<T> {
+        Vec3T::<T> {
+            x: X::into(x),
+            y: Y::into(y),
+            z: Z::into(z),
+        }
     }
     
     #[allow(unused_imports, dead_code)]
-    pub fn length(&self) -> f64 {
+    pub fn length(&self) -> T {
         self.length_squared().sqrt()
     }
     
     #[allow(unused_imports, dead_code)]
-    pub fn length_squared(&self) -> f64 {
+    pub fn length_squared(&self) -> T {
         self.x*self.x+self.y*self.y+self.z*self.z
     }
     
     #[allow(unused_imports, dead_code)]
-    pub fn dot(&self, rhs: &Self) -> f64 {
+    pub fn dot(&self, rhs: &Self) -> T {
         self.x * rhs.x + self.y * rhs.y + self.z * rhs.z
     }
     
     #[allow(unused_imports, dead_code)]
     pub fn cross(&self, rhs: &Self) -> Self {
-        Vec3::new( self.y*rhs.z - self.z*rhs.y,
+        Self::new( self.y*rhs.z - self.z*rhs.y,
                   -(self.x*rhs.z - self.z*rhs.x),
                   self.x*rhs.y - self.y*rhs.x)
     }
@@ -74,6 +113,7 @@ impl Vec3 {
    
 }
 
+#[allow(unused_macros)]
 macro_rules! impl_binop{
 (VEC, $op_trait: ident, $fn_name: ident, $op:tt, $target: ident, $rhs: ident) => {
     impl std::ops::$op_trait<$rhs> for $target {
@@ -116,104 +156,292 @@ macro_rules! impl_binop{
 };
 }
 
-impl_binop!(VEC, Add, add, +, Vec3, Vec3);
-impl_binop!(VEC, Sub, sub, -, Vec3, Vec3);
-impl_binop!(VEC, Mul, mul, *, Vec3, Vec3);
-impl_binop!(VEC, Div, div, /, Vec3, Vec3);
+//impl_binop!(VEC, Add, add, +, Vec3, Vec3);
+//impl_binop!(VEC, Sub, sub, -, Vec3, Vec3);
+//impl_binop!(VEC, Mul, mul, *, Vec3, Vec3);
+//impl_binop!(VEC, Div, div, /, Vec3, Vec3);
 
-impl_binop!(SCALAR, Mul, mul, *, Vec3, f64);
-impl_binop!(SCALAR, Div, div, /, Vec3, f64);
+//impl_binop!(SCALAR, Mul, mul, *, Vec3, f64);
+//impl_binop!(SCALAR, Div, div, /, Vec3, f64);
+   
+// this one doesn't really make sense for a vector
+//impl std::ops::Div<Vec3> for f64 {
+//    type Output = Vec3;
+//
+//    fn div(self, rhs: Vec3) -> Self::Output {
+//        Vec3 {
+//            x: rhs.x / self,
+//            y: rhs.y / self,
+//            z: rhs.z / self,
+//        }
+//    }
+//}
+//
+impl<T: float::Float + std::fmt::Display> std::ops::Div<T> for Vec3T<T> {
+    type Output = Vec3T<T>;
+
+    fn div(self, rhs: T) -> Self::Output {
+        Self::Output {
+            x: self.x / rhs,
+            y: self.y / rhs,
+            z: self.z / rhs,
+        }
+    }
+}
+ 
+impl<T: float::Float+std::fmt::Display> std::ops::Add<T> for Vec3T<T> {
+    type Output = Vec3T<T>;
+
+    fn add(self, rhs: T) -> Self::Output {
+        Self::Output {
+            x: self.x + rhs,
+            y: self.y + rhs,
+            z: self.z + rhs,
+        }
+    }
+}
+
+impl<T: float::Float+std::fmt::Display> std::ops::Add<Vec3T<T>> for Vec3T<T> {
+    type Output = Vec3T<T>;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        Self::Output {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }
+}
+  
+impl<T: float::Float+std::fmt::Display> std::ops::AddAssign<Vec3T<T>> for Vec3T<T> {
+    fn add_assign(&mut self, rhs: Self) {
+        *self = Self {
+                x: self.x + rhs.x,
+                y: self.y + rhs.y,
+                z: self.z + rhs.z,
+        }
+    }
+}
+
+impl<T: float::Float+std::fmt::Display> std::ops::Sub<T> for Vec3T<T> {
+    type Output = Vec3T<T>;
+
+    fn sub(self, rhs: T) -> Self::Output {
+        Self::Output {
+            x: self.x - rhs,
+            y: self.y - rhs,
+            z: self.z - rhs,
+        }
+    }
+}
+
+impl<T: float::Float+std::fmt::Display> std::ops::Sub<Vec3T<T>> for Vec3T<T> {
+    type Output = Vec3T<T>;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self::Output {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
+    }
+}
+  
+impl<T: float::Float+std::fmt::Display> std::ops::SubAssign<Vec3T<T>> for Vec3T<T> {
+    fn sub_assign(&mut self, rhs: Self) {
+        *self = Self {
+                x: self.x - rhs.x,
+                y: self.y - rhs.y,
+                z: self.z - rhs.z,
+        }
+    }
+}
+  
+impl<T: float::Float + std::fmt::Display> std::ops::Mul<T> for Vec3T<T> {
+    type Output = Vec3T<T>;
+
+    fn mul(self, rhs: T) -> Self::Output {
+        Self::Output {
+            x: self.x * rhs,
+            y: self.y * rhs,
+            z: self.z * rhs,
+        }
+    }
+}
+
+impl std::ops::Mul<Vec3T<f64>> for f64 {
+    type Output = Vec3T::<f64>;
+    fn mul(self, rhs: Vec3T::<f64>) -> Self::Output {
+        Self::Output {
+            x: self * rhs.x,
+            y: self * rhs.y,
+            z: self * rhs.z,
+        }
+    }
+}
+
+
+impl<T: float::Float + std::fmt::Display> std::ops::Mul<Vec3T<T>> for Vec3T<T> {
+    type Output = Vec3T<T>;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self::Output {
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+            z: self.z * rhs.z,
+        }
+    }
+}
+  
+impl<T: float::Float + std::fmt::Display> std::ops::MulAssign<Vec3T<T>> for Vec3T<T> {
+    fn mul_assign(&mut self, rhs: Self) {
+        *self = Self {
+            x: self.x * rhs.x,
+            y: self.y * rhs.y,
+            z: self.z * rhs.z,
+        }
+    }
+}
+
+impl<T: float::Float + std::fmt::Display> std::ops::MulAssign<T> for Vec3T<T> {
+    fn mul_assign(&mut self, rhs: T) {
+        *self = Self {
+            x: self.x * rhs,
+            y: self.y * rhs,
+            z: self.z * rhs,
+        }
+    }
+}
+  
 #[allow(unused_imports)]
-pub(crate) use impl_binop;
+//pub(crate) use impl_binop;
 
-impl std::ops::Add<&Vec3> for Vec3 {
+impl<T: float::Float +
+        std::ops::Add +
+        std::fmt::Display
+    > std::ops::Add<&Vec3T<T>> for Vec3T<T> {
 type Output = Self;
 
-fn add(self, rhs: &Self) -> Self{
-    Self{
-        x: self.x + rhs.x,
-        y: self.y + rhs.y,
-        z: self.z + rhs.z,
-    }
-}   
+    fn add(self, rhs: &Self) -> Self{
+        Self{
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
+    }   
 }
 
-impl std::ops::AddAssign<Vec3> for Vec3 {
-fn add_assign(&mut self, rhs: Self) {
-    *self = Self {
-        x: self.x + rhs.x,
-        y: self.y + rhs.y,
-        z: self.z + rhs.z,
-    }
-}
-}
+//impl<T: float::Float +
+//        std::ops::AddAssign +
+//        std::fmt::Display
+//    > std::ops::AddAssign<Vec3T<T>> for Vec3T<T> {
+//    fn add_assign(&mut self, rhs: Self) {
+//       *self = Self {
+//            x: self.x + rhs.x,
+//            y: self.y + rhs.y,
+//            z: self.z + rhs.z,
+//        }
+//    }
+//}
 
 
-impl std::ops::AddAssign<&Vec3> for Vec3 {
-fn add_assign(&mut self, rhs: &Self) {
-    *self = Self {
-        x: self.x + rhs.x,
-        y: self.y + rhs.y,
-        z: self.z + rhs.z,
-    }
-}
-}
-
-impl std::ops::Sub<&Vec3> for Vec3 {
-type Output = Self;
-
-fn sub(self, rhs: &Self) -> Self{
-    Self{
-        x: self.x - rhs.x,
-        y: self.y - rhs.y,
-        z: self.z - rhs.z,
-    }
-}   
-}
-
-impl std::ops::SubAssign<Vec3> for Vec3 {
-fn sub_assign(&mut self, rhs: Self) {
-    *self = Self {
-        x: self.x - rhs.x,
-        y: self.y - rhs.y,
-        z: self.z - rhs.z,
+impl<T: float::Float +
+        std::ops::AddAssign +
+        std::fmt::Display
+    > std::ops::AddAssign<&Vec3T<T>> for Vec3T<T> {
+    fn add_assign(&mut self, rhs: &Self) {
+        *self = Self {
+            x: self.x + rhs.x,
+            y: self.y + rhs.y,
+            z: self.z + rhs.z,
+        }
     }
 }
+
+impl<T: float::Float +
+        std::ops::Sub +
+        std::fmt::Display
+    > std::ops::Sub<&Vec3T<T>> for Vec3T<T> {
+    type Output = Self;
+
+    fn sub(self, rhs: &Self) -> Self{
+        Self{
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+            z: self.z - rhs.z,
+        }
+    }   
 }
-
-
-impl std::ops::SubAssign<&Vec3> for Vec3 {
-fn sub_assign(&mut self, rhs: &Self) {
-    *self = Self {
-        x: self.x - rhs.x,
-        y: self.y - rhs.y,
-        z: self.z - rhs.z,
+//
+//impl<T: float::Float + std::ops::SubAssign> std::ops::SubAssign<Vec3T<T>> for Vec3T<T> {
+//    fn sub_assign(&mut self, rhs: Self) {
+//        *self = Self {
+//            x: self.x - rhs.x,
+//            y: self.y - rhs.y,
+//            z: self.z - rhs.z,
+//        }
+//    }
+//}
+//
+//
+//impl<T: float::Float> std::ops::SubAssign<&Vec3T<T>> for Vec3T<T> {
+//fn sub_assign(&mut self, rhs: &Self) {
+//    *self = Self {
+//        x: self.x - rhs.x,
+//        y: self.y - rhs.y,
+//        z: self.z - rhs.z,
+//    }
+//}
+//}
+//
+//
+//impl<T: float::Float> std::ops::MulAssign<T> for Vec3T<T> {
+//fn mul_assign(&mut self, rhs: T) {
+//    self.x *= rhs;
+//    self.y *= rhs;
+//    self.z *= rhs;
+//}
+//}
+//
+//impl<T: float::Float +
+//        std::ops::DivAssign +
+//        std::fmt::Display
+//    > std::ops::DivAssign<T> for Vec3T<T> {
+//    fn div_assign(&mut self, rhs: T) {
+//        self.x /= rhs;
+//        self.y /= rhs;
+//        self.z /= rhs;
+//    }
+//}
+//
+impl<T: float::Float +
+        std::ops::DivAssign +
+        std::fmt::Display
+    > std::ops::DivAssign<T> for Vec3T<T> {
+    fn div_assign(&mut self, rhs: T) {
+        self.x /= rhs;
+        self.y /= rhs;
+        self.z /= rhs;
     }
 }
+
+impl<T: float::Float +
+        std::ops::DivAssign +
+        std::fmt::Display
+    > std::ops::DivAssign<&Vec3T<T>> for Vec3T<T> {
+    fn div_assign(&mut self, rhs: &Vec3T<T>) {
+        self.x /= rhs.x;
+        self.y /= rhs.y;
+        self.z /= rhs.z;
+    }
 }
 
-
-impl std::ops::MulAssign<f64> for Vec3 {
-fn mul_assign(&mut self, rhs: f64) {
-    self.x *= rhs;
-    self.y *= rhs;
-    self.z *= rhs;
-}
-}
-
-impl std::ops::DivAssign<f64> for Vec3 {
-fn div_assign(&mut self, rhs: f64) {
-    self.x /= rhs;
-    self.y /= rhs;
-    self.z /= rhs;
-}
-}
 
 // NOTE: This isn't how I'd normally want to represent pretty printed output,
 // but these will be printed out into a ppm file, so it needs to be in this format.
-impl std::fmt::Display for Vec3 {
+impl<T: float::Float + std::fmt::Display> std::fmt::Display for Vec3T<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{} {} {}", self.x, self.y, self.z)
+        write!(f, "{} {} {}", self.x, self.y, self.z)
     }
 }
 
@@ -380,31 +608,31 @@ use crate::vec3::{Vec3,dot,unit_vector};
        let vec4 = Vec3::new(1.0, 1.0, 1.0);
        
        let vec_dup = vec.clone();
-       vec -= &vec.clone();
+       vec -= vec.clone();
        assert_eq!(vec, Vec3::new(0.0, 0.0, 0.0));
        vec = vec_dup.clone();
        vec -= vec;
        assert_eq!(vec, Vec3::new(0.0, 0.0, 0.0));
        vec = vec_dup.clone();
-       vec -= &vec1;
+       vec -= vec1;
        assert_eq!(vec, Vec3::new(2.0, 4.0, 5.0));
        vec = vec_dup.clone();
        vec -= vec1;
        assert_eq!(vec, Vec3::new(2.0, 4.0, 5.0));
        vec = vec_dup.clone();
-       vec -= &vec2;
+       vec -= vec2;
        assert_eq!(vec, Vec3::new(3.0, 3.0, 5.0));
        vec = vec_dup.clone();
        vec -= vec2;
        assert_eq!(vec, Vec3::new(3.0, 3.0, 5.0));
        vec = vec_dup.clone();
-       vec -= &vec3;
+       vec -= vec3;
        assert_eq!(vec, Vec3::new(3.0, 4.0, 4.0));
        vec = vec_dup.clone();
        vec -= vec3;
        assert_eq!(vec, Vec3::new(3.0, 4.0, 4.0));
        vec = vec_dup.clone();
-       vec -= &vec4;
+       vec -= vec4;
        assert_eq!(vec, Vec3::new(2.0, 3.0, 4.0));
        vec = vec_dup.clone();
        vec -= vec4;
@@ -504,5 +732,13 @@ use crate::vec3::{Vec3,dot,unit_vector};
         let ans = Vec3::new(5.0, 12.0, -21.0);
 
         assert_eq!(vec*vec2, ans);
+    }
+
+    #[test]
+    fn test_new_with_0_instead_of_0f(){
+        let vec = Vec3::new(1.0, 0, 1);
+        assert_eq!(vec.x, 1.0);
+        assert_eq!(vec.y, 0.0);
+        assert_eq!(vec.z, 1.0);
     }
 }
