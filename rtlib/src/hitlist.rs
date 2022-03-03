@@ -1,6 +1,8 @@
 #[allow(unused_imports)]
-use super::hittable::{Hittable, HitRecord, Hitters};
+use super::hittable::{HitRecord, Hittable, Hitters};
 use super::ray::Ray;
+use crate::prelude;
+use prelude::BoundingBox;
 
 #[allow(unused_imports, dead_code)]
 #[derive(Default, Clone)]
@@ -9,29 +11,25 @@ pub struct HitList {
     pub list: Vec<Hitters>,
 }
 
-impl HitList {
+impl<'a> HitList {
     //pub fn push(&mut self, obj: dyn Hittable) {
     //    self.hitlist.push(Box::new(obj));
     //}
     pub fn new() -> HitList {
-        HitList {
-            list: Vec::new(),
-        }
+        HitList { list: Vec::new() }
     }
-    
+
     pub fn from_hittable(object: Hitters) -> HitList {
-        let mut list = HitList {
-            list: Vec::new(),
-        };
+        let mut list = HitList { list: Vec::new() };
         list.add(object);
         list
     }
-    
+
     pub fn clear(&mut self) {
         self.list.clear()
     }
-    
-    pub fn add(&mut self, object: Hitters){
+
+    pub fn add(&mut self, object: Hitters) {
         self.list.push(object)
     }
 }
@@ -48,11 +46,24 @@ impl Hittable for HitList {
         }
         temp_rec
     }
-    
+
     fn box_clone(&self) -> Box<dyn Hittable> {
         Box::new((*self).clone())
     }
-    
+
+    // bounding_box for a HitList returns a bounding box that would contain
+    // all of the objects it contains.
+    fn bounding_box(&self, t_min: f64, t_max: f64) -> Option<BoundingBox> {
+        // figure out the most extreme bounds of everything
+        // under this one and return the extremities
+        let mut temp_rec: Option<BoundingBox> = None;
+        for obj in &self.list {
+            let rec = obj.bounding_box(t_min, t_max);
+            let bigger = BoundingBox::expand_to_contain(temp_rec, rec);
+            temp_rec.replace(bigger.unwrap_or_default());
+        }
+        temp_rec
+    }
 }
 
 //#[allow(unused_macros)]
@@ -64,4 +75,3 @@ impl Hittable for HitList {
 //        }
 //    };
 //}
-

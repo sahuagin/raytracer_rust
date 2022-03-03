@@ -1,7 +1,7 @@
-use super::vec3::{Vec3, Color};
+use super::vec3::{Color, Vec3};
 
-pub trait Texture: {
-    fn value(&self, u: f64, v: f64, p: &Vec3) -> Color; 
+pub trait Texture {
+    fn value(&self, u: f64, v: f64, p: &Vec3) -> Color;
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result;
     fn albedo(&self) -> TextureType;
     fn box_clone(&self) -> Box<TextureType>;
@@ -11,16 +11,16 @@ pub trait Texture: {
 pub struct NoneTexture;
 
 impl Texture for NoneTexture {
-    fn value(&self, _u: f64, _v: f64, _p: &Vec3) -> Color{
+    fn value(&self, _u: f64, _v: f64, _p: &Vec3) -> Color {
         Color::default()
     }
-    fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result{
+    fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "NoneTexture is empty.")
     }
-    fn albedo(&self) -> TextureType{
+    fn albedo(&self) -> TextureType {
         TextureType::Nothing(NoneTexture)
     }
-    fn box_clone(&self) -> Box<TextureType>{
+    fn box_clone(&self) -> Box<TextureType> {
         Box::new(TextureType::Nothing(self::NoneTexture))
     }
 }
@@ -28,7 +28,7 @@ impl Texture for NoneTexture {
 impl NoneTexture {
     #[allow(dead_code)]
     fn new() -> Self {
-        NoneTexture{}
+        NoneTexture {}
     }
 }
 
@@ -39,48 +39,34 @@ pub enum TextureType {
 }
 
 impl Texture for TextureType {
-    fn value(&self, _u: f64, _v: f64, _p: &Vec3) -> Color{
+    fn value(&self, _u: f64, _v: f64, _p: &Vec3) -> Color {
         match self {
-            TextureType::ConstantTexture(x) => {
-                x.color
-            },
-            TextureType::Nothing(_x) => {
-                Color::new(0.0, 0.0,0.0)
-            }
+            TextureType::ConstantTexture(x) => x.color,
+            TextureType::Nothing(_x) => Color::new(0.0, 0.0, 0.0),
         }
     }
-    fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result{
+    fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TextureType::ConstantTexture(x) => {
-                x.inner_fmt(f)
-            },
-            TextureType::Nothing(x) => {
-                x.inner_fmt(f)
-            }
+            TextureType::ConstantTexture(x) => x.inner_fmt(f),
+            TextureType::Nothing(x) => x.inner_fmt(f),
         }
     }
-    fn albedo(&self) -> TextureType{
+    fn albedo(&self) -> TextureType {
         match self {
-            TextureType::ConstantTexture(x) => {
-                x.albedo()
-            },
-            TextureType::Nothing(x) => {
-                x.albedo()
-            }
+            TextureType::ConstantTexture(x) => x.albedo(),
+            TextureType::Nothing(x) => x.albedo(),
         }
     }
-    fn box_clone(&self) -> Box<TextureType>{
-        Box::new(self.clone())       
+    fn box_clone(&self) -> Box<TextureType> {
+        Box::new(self.clone())
     }
-
 }
 
-impl Clone for Box<dyn Texture > {
-    fn clone(&self) -> Box<dyn Texture>{
+impl Clone for Box<dyn Texture> {
+    fn clone(&self) -> Box<dyn Texture> {
         self.box_clone()
     }
 }
-
 
 #[derive(Copy, Clone)]
 pub struct ConstantTexture {
@@ -89,26 +75,23 @@ pub struct ConstantTexture {
 
 impl ConstantTexture {
     pub fn new(_u: f64, _v: f64, p: &Color) -> Self {
-        ConstantTexture {
-            color: *p,
-
-        }
+        ConstantTexture { color: *p }
     }
 }
 
 impl Texture for ConstantTexture {
-    fn value(&self, _u: f64, _v: f64, _p: &Vec3 ) -> Color{
+    fn value(&self, _u: f64, _v: f64, _p: &Vec3) -> Color {
         self.color
     }
-    
+
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "ConstantTexture: color: {}", self.color)
     }
-    
+
     fn albedo(&self) -> TextureType {
         TextureType::ConstantTexture(*self)
     }
-    
+
     fn box_clone(&self) -> Box<TextureType> {
         Box::new(TextureType::ConstantTexture(*self))
     }

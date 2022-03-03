@@ -1,5 +1,5 @@
-use crate::vec3::Vec3;
 use crate::util::optional_arg;
+use crate::vec3::Vec3;
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Ray {
@@ -10,29 +10,29 @@ pub struct Ray {
 
 impl Ray {
     pub fn new(a: &Vec3, b: &Vec3, t: Option<f64>) -> Self {
-        Self{
+        Self {
             a: *a,
             b: *b,
             time: optional_arg::<f64>(t),
         }
     }
-    
+
     pub fn origin(&self) -> Vec3 {
         self.a
     }
-    
+
     pub fn direction(&self) -> Vec3 {
         self.b
     }
-    
+
     pub fn point_at_parameter(&self, t: f64) -> Vec3 {
-        self.a + t*self.b
+        self.a + t * self.b
     }
-    
+
     pub fn at(&self, t: f64) -> Vec3 {
         self.point_at_parameter(t)
     }
-    
+
     pub fn time(&self) -> f64 {
         self.time
     }
@@ -47,8 +47,8 @@ mod test {
     fn test_constructor() {
         let a = Vec3::new(1.0, 2.0, 3.0);
         let b = Vec3::new(7.3, 9.8, 10.2);
-        let r = ray::Ray::new(&a,&b, None);
-        
+        let r = ray::Ray::new(&a, &b, None);
+
         assert_eq!(r.a, a);
         assert_eq!(r.b, b);
     }
@@ -58,7 +58,7 @@ mod test {
         let v = Vec3::new(1.0, 2.0, 3.0);
         let v2 = Vec3::new(77.7, 88.8, 12.34);
         let r = ray::Ray::new(&v, &v2, None);
-     
+
         assert_eq!(r.origin(), v);
     }
 
@@ -67,9 +67,8 @@ mod test {
         let v = Vec3::new(1.0, 2.0, 3.0);
         let v2 = Vec3::new(77.7, 88.8, 12.34);
         let r = ray::Ray::new(&v, &v2, None);
-     
-        assert_eq!(r.direction(), v2);
 
+        assert_eq!(r.direction(), v2);
     }
 
     #[test]
@@ -78,9 +77,8 @@ mod test {
         let v2 = Vec3::new(77.7, 88.8, 12.34);
         let r = ray::Ray::new(&v, &v2, None);
         let p = 30.0;
-     
-        assert_eq!(r.point_at_parameter(p), r.a + r.b*p );
-        assert_eq!(r.point_at_parameter(p), r.a + p*r.b );
-        
+
+        assert_eq!(r.point_at_parameter(p), r.a + r.b * p);
+        assert_eq!(r.point_at_parameter(p), r.a + p * r.b);
     }
 }

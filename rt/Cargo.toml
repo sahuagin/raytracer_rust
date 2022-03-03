@@ -10,3 +10,15 @@ rand = "0.8.4"
 rayon = "1.5.1"
 rtlib = { path = "../rtlib" }
 rtmacros = { path = "../rtmacros" }
+
+[profile.release]
+panic = 'abort'
+
+
+[dev-dependencies]
+criterion = "0.3"
+
+
+[[bench]]
+name = "bvh_bench"
+harness = false
