@@ -44,6 +44,9 @@ pub enum TextureType {
     Nothing(NoneTexture),
 }
 
+unsafe impl Sync for TextureType{}
+unsafe impl Send for TextureType{}
+
 impl Texture for TextureType {
     fn value(&self, u: f64, v: f64, p: &Vec3) -> Color {
         match self {
