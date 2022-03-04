@@ -12,7 +12,7 @@ pub trait Material {
     fn box_clone(&self) -> Box<MaterialType>;
 }
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub enum MaterialType {
     Lambertian(Lambertian),
     Dielectric(Dielectric),
@@ -80,13 +80,13 @@ impl Material for MaterialType {
     fn box_clone(&self) -> Box<MaterialType> {
         match self {
             MaterialType::Lambertian(innertype) => {
-                return Box::new(MaterialType::Lambertian(*innertype));
+                return Box::new(MaterialType::Lambertian(innertype.clone()));
             }
             MaterialType::Dielectric(innertype) => {
-                return Box::new(MaterialType::Dielectric(*innertype));
+                return Box::new(MaterialType::Dielectric(innertype.clone()));
             }
             MaterialType::Metal(innertype) => {
-                return Box::new(MaterialType::Metal(*innertype));
+                return Box::new(MaterialType::Metal(innertype.clone()));
             }
             MaterialType::Nothing(_innertype) => Box::new(MaterialType::Nothing(NoneMaterial)),
         }
@@ -125,7 +125,7 @@ mat_display!(dyn Material);
 //    }
 //}
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Lambertian {
     albedo: TextureType,
 }
@@ -133,7 +133,7 @@ pub struct Lambertian {
 impl Lambertian {
     #[allow(dead_code)]
     pub fn new(texture: &TextureType) -> Self {
-        Lambertian { albedo: *texture }
+        Lambertian { albedo: texture.clone() }
     }
 }
 
@@ -141,29 +141,28 @@ impl Material for Lambertian {
     fn scatter(&self, _ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
         let target = rec.p + rec.normal + random_in_unit_sphere();
         let scattered = Ray::new(&rec.p, &(target - &rec.p), None);
-        let attenuation = self.albedo().value(0.0, 0.0, &target);
+        let attenuation = self.albedo.value(0.0, 0.0, &rec.p);
         return Some((attenuation, scattered));
     }
 
     fn albedo(&self) -> TextureType {
-        self.albedo
+        self.albedo.clone()
     }
 
     #[allow(dead_code)]
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Lambertian::albedo: ")?;
-        let alb = self.albedo();
-        return alb.inner_fmt(f);
+        self.albedo().inner_fmt(f)
     }
 
     fn box_clone(&self) -> Box<MaterialType> {
-        Box::new(MaterialType::Lambertian(*self))
+        Box::new(MaterialType::Lambertian(self.clone()))
     }
 }
 
 mat_display!(Lambertian);
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Metal {
     albedo: TextureType,
     fuzz: f64,
@@ -199,7 +198,7 @@ impl Material for Metal {
     }
 
     fn albedo(&self) -> TextureType {
-        self.albedo
+        self.albedo.clone()
     }
 
     #[allow(dead_code)]
@@ -208,12 +207,12 @@ impl Material for Metal {
         return self.albedo().inner_fmt(f);
     }
     fn box_clone(&self) -> Box<MaterialType> {
-        Box::new(MaterialType::Metal(*self))
+        Box::new(MaterialType::Metal(self.clone()))
     }
 }
 mat_display!(Metal);
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Dielectric {
     #[allow(dead_code)]
     albedo: TextureType,
@@ -223,7 +222,7 @@ pub struct Dielectric {
 impl Dielectric {
     pub fn new(albedo: &Color, refractive_index: f64) -> Self {
         Dielectric {
-            albedo: TextureType::ConstantTexture(ConstantTexture::new(0.0, 0.0, albedo)),
+            albedo: TextureType::ConstantTexture(ConstantTexture::new(albedo)),
             ref_idx: refractive_index,
         }
     }
@@ -266,7 +265,7 @@ impl Material for Dielectric {
     }
 
     fn albedo(&self) -> TextureType {
-        self.albedo
+        self.albedo.clone()
     }
 
     #[allow(dead_code)]
@@ -276,7 +275,7 @@ impl Material for Dielectric {
     }
 
     fn box_clone(&self) -> Box<MaterialType> {
-        Box::new(MaterialType::Dielectric(*self))
+        Box::new(MaterialType::Dielectric(self.clone()))
     }
 }
 //mat_display!(Metal);

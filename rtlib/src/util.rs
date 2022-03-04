@@ -1,6 +1,7 @@
 //#[allow(unused_attributes)]
 //#[macro_use]
 use super::materials::{Dielectric, Lambertian, Material, MaterialType, Metal};
+use super::textures::{ConstantTexture, CheckerTexture, TextureType};
 use super::ray::Ray;
 use super::sphere::Sphere;
 use super::vec3::{dot, unit_vector, Color, Point3, Vec3};
@@ -118,10 +119,18 @@ pub fn refract(v: &Vec3, n: Vec3, ni_over_nt: f64) -> Option<Vec3> {
 #[allow(unused_imports, dead_code)]
 pub fn random_scene(rng: &mut impl rand::Rng) -> HitList {
     let mut hl: HitList = HitList::new();
+    let checker = TextureType::CheckerTexture(CheckerTexture::new(
+        TextureType::ConstantTexture(
+            ConstantTexture::new(&vect!(0.2, 0.3, 0.1))
+            ),
+        TextureType::ConstantTexture(
+            ConstantTexture::new(&vect!(0.9, 0.9, 0.9))
+            )
+        ));
     hl.add(Hitters::Sphere(Sphere::new(
         &vect!(0.0, -1000.0, 0.0),
         1000.0,
-        MaterialType::Lambertian(Lambertian::new(&color_to_texture!(&vect!(0.5, 0.5, 0.5)))),
+        MaterialType::Lambertian(Lambertian::new(&checker))
     )));
     for a in -11..11 {
         for b in -11..11 {
@@ -264,7 +273,7 @@ mod test {
         let center = Point3::new(2.0, 2.0, 2.0);
         let radius = 3.0;
         let metal = wrap_material!(Metal, color_to_texture!(&Color::new(1.0, 1.0, 1.0)), 1.0);
-        let metal2 = metal;
+        let metal2 = metal.clone();
         let s = Hitters::Sphere(Sphere::new(&center, radius, metal));
         let hitrec = Some(HitRecord {
             t: 0.26794919243112264,

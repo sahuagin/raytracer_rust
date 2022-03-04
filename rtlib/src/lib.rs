@@ -31,7 +31,7 @@ pub mod prelude {
 macro_rules! color_to_texture {
     ($col:expr) => {
         $crate::textures::TextureType::ConstantTexture($crate::textures::ConstantTexture::new(
-            0.0, 0.0, $col,
+            $col,
         ))
     };
 }

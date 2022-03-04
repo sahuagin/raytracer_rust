@@ -7,7 +7,7 @@ use super::vec3::{dot, Vec3};
 use super::vect;
 use crate::prelude::BoundingBox;
 
-#[derive(Copy, Clone)]
+#[derive(Clone)]
 pub struct Sphere {
     center: Vec3,
     radius: f64,
@@ -44,7 +44,7 @@ impl Hittable for Sphere {
                     p: pat,
                     normal: (pat - self.center) / self.radius,
                     front_face: false,
-                    material: self.material,
+                    material: self.material.clone(),
                 });
                 return rec;
             }
@@ -56,7 +56,7 @@ impl Hittable for Sphere {
                     p: pat,
                     normal: (pat - self.center) / self.radius,
                     front_face: false,
-                    material: self.material,
+                    material: self.material.clone(),
                 });
                 return rec;
             }
@@ -77,7 +77,7 @@ impl Hittable for Sphere {
 }
 
 #[allow(unused_imports, dead_code)]
-#[derive(Default, Clone, Copy)]
+#[derive(Default, Clone)]
 pub struct MovingSphere {
     pub center0: Vec3,
     pub center1: Vec3,
@@ -123,7 +123,7 @@ impl Hittable for MovingSphere {
                     t: temp,
                     p: p,
                     normal: (p - self.center_at_time(r.time())) / self.radius,
-                    material: self.material,
+                    material: self.material.clone(),
                     front_face: false,
                 });
                 return retrec;
@@ -135,7 +135,7 @@ impl Hittable for MovingSphere {
                     t: temp,
                     p: p,
                     normal: (p - self.center_at_time(r.time())) / self.radius,
-                    material: self.material,
+                    material: self.material.clone(),
                     front_face: false,
                 });
                 return retrec;
@@ -207,7 +207,7 @@ mod test {
         let r = Ray::new(&pt1, &pt2, None);
         let center = Point3::new(2.0, 2.0, 2.0);
         let radius = 3.0;
-        let s = Sphere::new(&center, radius, l);
+        let s = Sphere::new(&center, radius, l.clone());
         let hitrec = HitRecord {
             t: 0.26794919243112264,
             p: Vec3 {
@@ -221,7 +221,7 @@ mod test {
                 z: -0.5773502691896258,
             },
             front_face: false,
-            material: l,
+            material: l.clone(),
         };
 
         // this should have 2 hits, but we'll return the closest one

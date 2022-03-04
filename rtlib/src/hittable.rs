@@ -74,7 +74,7 @@ pub enum Hitters {
 }
 
 #[allow(unused_imports, dead_code)]
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct HitRecord {
     pub t: f64,
     pub p: Vec3,

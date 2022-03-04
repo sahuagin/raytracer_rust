@@ -138,7 +138,7 @@ impl<'a> Hittable for Bvh {
             let lefthit = (*self.p_left).as_ref().hit(r, t_min, t_max);
             let righthit = (*self.p_right).as_ref().hit(r, t_min, t_max);
             if lefthit.is_some() && righthit.is_some() {
-                if lefthit.unwrap().t < righthit.unwrap().t {
+                if lefthit.clone().unwrap().t < righthit.clone().unwrap().t {
                     return lefthit;
                 } else {
                     return righthit;
@@ -229,10 +229,10 @@ mod test {
         let c3 = Point3::new(-5.0, -32.0, 27.0);
         let radius = 3.0;
 
-        let s0 = Sphere::new(&c0, radius, l);
-        let s1 = Sphere::new(&c1, radius, l);
-        let s2 = Sphere::new(&c2, radius, l);
-        let s3 = Sphere::new(&c3, radius, l);
+        let s0 = Sphere::new(&c0, radius, l.clone());
+        let s1 = Sphere::new(&c1, radius, l.clone());
+        let s2 = Sphere::new(&c2, radius, l.clone());
+        let s3 = Sphere::new(&c3, radius, l.clone());
 
         let hitrec = HitRecord {
             t: 0.26794919243112264,
@@ -247,7 +247,7 @@ mod test {
                 z: -0.5773502691896258,
             },
             front_face: false,
-            material: l,
+            material: l.clone(),
         };
         let mut hl = HitList::new();
         hl.add(Hitters::Sphere(s0));
@@ -261,9 +261,9 @@ mod test {
         let hit_or_not = bvh.hit(&r, 0., 0.);
         // this should have 2 hits, but we'll return the closest one
         if hit_or_not.is_some() {
-            println!("the result front_face: {}", hit_or_not.unwrap().front_face);
-            assert_eq!(hit_or_not.unwrap().t, hitrec.t);
-            println!("the result: {}", hit_or_not.unwrap());
+            println!("the result front_face: {}", hit_or_not.as_ref().unwrap().front_face);
+            assert_eq!(hit_or_not.as_ref().unwrap().t, hitrec.t);
+            println!("the result: {}", hit_or_not.as_ref().unwrap());
         }
         //println!("the result front_face: {}", result.material);
 
