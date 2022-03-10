@@ -117,9 +117,11 @@ pub fn refract(v: &Vec3, n: Vec3, ni_over_nt: f64) -> Option<Vec3> {
     }
 }
 #[allow(unused_imports, dead_code)]
-pub fn random_scene(rng: &mut impl rand::Rng) -> HitList {
+pub fn random_scene(rng: &mut impl rand::Rng, checked: bool) -> HitList {
     let mut hl: HitList = HitList::new();
-    let checker = TextureType::CheckerTexture(CheckerTexture::new(
+    let checker: TextureType;
+    if checked == true {
+        checker = TextureType::CheckerTexture(CheckerTexture::new(
         TextureType::ConstantTexture(
             ConstantTexture::new(&vect!(0.2, 0.3, 0.1))
             ),
@@ -127,6 +129,12 @@ pub fn random_scene(rng: &mut impl rand::Rng) -> HitList {
             ConstantTexture::new(&vect!(0.9, 0.9, 0.9))
             )
         ));
+    } else 
+    {
+        checker = TextureType::ConstantTexture(
+                ConstantTexture::new(&vect!(0.5, 0.5, 0.5))
+            )
+    }
     hl.add(Hitters::Sphere(Sphere::new(
         &vect!(0.0, -1000.0, 0.0),
         1000.0,
@@ -203,6 +211,29 @@ pub fn random_scene_with_time() {
     const _N: i32 = 50_000;
     let _list = HitList::new();
     //list.add(sphere!(&vect!(0.0, -1_000.0, 0.0), 1_000, Lambertian::new(checker)));
+}
+
+#[allow(unused_imports, dead_code)]
+pub fn two_spheres() -> HitList{
+    let checker = TextureType::CheckerTexture(CheckerTexture::new(
+            TextureType::ConstantTexture(
+                ConstantTexture::new(&vect!(0.2, 0.3, 0.1))),
+            TextureType::ConstantTexture(
+                ConstantTexture::new(&vect!(0.9, 0.9, 0.9))
+                )
+            ));
+    let mut hl: HitList = HitList::new();
+    hl.add(Hitters::Sphere(Sphere::new(
+                &vect!(0, -10, 0),
+                10.0,
+                MaterialType::Lambertian(Lambertian::new(&checker)))
+                ));
+    hl.add(Hitters::Sphere(Sphere::new(
+                &vect!(0, 10, 0),
+                10.,
+                MaterialType::Lambertian(Lambertian::new(&checker)))));
+
+    hl
 }
 
 pub fn ffmin<T: float::Float + std::cmp::PartialOrd>(a: T, b: T) -> T {

@@ -20,9 +20,10 @@ use rtlib::materials::{Dielectric, Lambertian, Metal};
 #[allow(unused_imports)]
 use rtlib::sphere::Sphere;
 #[allow(unused_imports)]
-use rtlib::util::{color, random_scene, write_color};
+use rtlib::util::{color, random_scene, two_spheres, write_color};
 use rtlib::vec3::Color;
 use rtlib::bvh::Bvh;
+use rtlib::hitlist::HitList;
 
 
 fn main() {
@@ -94,29 +95,34 @@ fn main() {
         .subcommand(
             Command::new("random_scene")
             .about("Generates the cover of the RayTracing book. 3 orbs in center of picture, 100 spheres of random textures around. One large sphere for 'floor'.")
+            .arg(clap::arg!(-x --checkerboard "Turns the base to a checkerboard pattern."))
+            )
+        .subcommand(
+            Command::new("two_spheres")
+            .about("Display 2 large checkerboard spheres.")
             );
 
     let matches = cmd.get_matches();
 
-    println!("What we got on the cmdline {:?}", matches);
+    //eprintln!("What we got on the cmdline {:?}", matches);
 
     // NOTE: If there is a default value for something, it'll always
     // show as "present", so we know we have settings for all of the
     // ones we have as default.
     ri.samples = matches.value_of_t("num_samples").expect("Number of samples is required.");
-    println!("We got a number of samples of: {:?}", ri.samples);
+    //eprintln!("We got a number of samples of: {:?}", ri.samples);
     ri.depth = matches.value_of_t("max_depth").expect("Maximum depth is required.");
-    println!("We got a max depth of: {:?}", ri.depth);
+    //eprintln!("We got a max depth of: {:?}", ri.depth);
     ri.vfov = matches.value_of_t("vfov").expect("Vertical FOV is required.");
-    println!("We got a vfov of: {:?}", ri.vfov);
+    //eprintln!("We got a vfov of: {:?}", ri.vfov);
     ri.width = matches.value_of_t("image_width").expect("Image width required.");
-    println!("We got a width of: {:?}", ri.width);
+    //eprintln!("We got a width of: {:?}", ri.width);
     ri.aperture = matches.value_of_t("aperture").expect("Aperture required.");
-    println!("We got a aperture of: {:?}", ri.aperture);
+    //eprintln!("We got a aperture of: {:?}", ri.aperture);
     ri.start = matches.value_of_t("start_time").expect("Start time required.");
-    println!("We got a start time of: {:?} seconds", ri.start);
+    //eprintln!("We got a start time of: {:?} seconds", ri.start);
     ri.stop = matches.value_of_t("stop_time").expect("Stop time required.");
-    println!("We got a stop time of: {:?} seconds", ri.stop);
+    //eprintln!("We got a stop time of: {:?} seconds", ri.stop);
 
     if matches.is_present("fast") {
        ri = RenderInfo{
@@ -133,7 +139,7 @@ fn main() {
     // make read only
     let ri = ri;
 
-    println!("Render info after arg parsing. {:?}", ri);
+    //eprintln!("Render info after arg parsing. {:?}", ri);
 
     
     // For error handling
@@ -142,16 +148,7 @@ fn main() {
     let mut rng = rand::thread_rng();
 
     // we'll use randopm_scene as the default
-    let mut world = Arc::new(random_scene(&mut rng));
-
-    // now we handle which scene we want to render. That is really how we make the world.
-    let matches = match matches.subcommand() {
-        Some(("random_scene", matches)) => matches, // nothing to do, as this is the default
-        _ => unreachable!("clap should ensure we don't get here"),
-    };
-    println!("first get_matches {:?}", matches);
-
-
+    let mut world: Arc<HitList>;
 
     // if you make it 2000x1000 that's 100x, and then 100 more samples of each,
     // and then test against all the objects again for differaction. And then
@@ -163,7 +160,6 @@ fn main() {
     #[allow(non_snake_case)]
     let MAX_DEPTH: i32 = ri.depth;
     //let radian: f64 = (std::f64::consts::PI/4.0).cos();
-    let vfov: f64 = ri.vfov as f64;
     //let aspect: f64 = nx as f64 / ny as f64;
     const ASPECT_RATIO: f64 = 2.0 / 1.0; // eg 2000x1000, 800x400, 200x100
                                          // instead of setting the values and generating the aspect ratio,
@@ -175,21 +171,16 @@ fn main() {
     let IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
     #[allow(non_snake_case)]
     let NUM_PIXELS: i32 = IMAGE_WIDTH * IMAGE_HEIGHT;
-
-    let look_from = vect!(25.0, 2.5, 5.0);
-    let look_at = rtmacros::vect!(3.0, 0.75, 0.75);
+    let mut look_from = vect!(25.0, 2.5, 5.0);
+    let mut look_at = rtmacros::vect!(3.0, 0.75, 0.75);
     let vup = rtmacros::vect!(0.0, 1.0, 0.0);
-    let dist_to_focus: f64 = (look_from - look_at).length();
+    let mut dist_to_focus: f64 = (look_from - look_at).length();
     #[allow(non_snake_case)]
-    let APERTURE: f64 = ri.aperture as f64;
-
+    let mut APERTURE: f64 = ri.aperture as f64;
     let start_time_in_sec:f64 = 0.0;
     let stop_time_in_sec:f64 = 0.0;
-    let mut bvh = Bvh::new();
-    bvh.add_hitlist(& mut world, start_time_in_sec, stop_time_in_sec);
-    let world = Arc::new(bvh.build());
-
-    let camera = Camera::new(
+    let vfov: f64 = ri.vfov as f64;
+    let mut camera = Camera::new(
         look_from,
         look_at,
         vup,
@@ -200,6 +191,56 @@ fn main() {
         start_time_in_sec,
         stop_time_in_sec,
     );
+
+    // now we handle which scene we want to render. That is really how we make the world.
+    // may need matches later for other subcommands
+    #[allow(unused_variables)]
+    let matches = match matches.subcommand() {
+        Some(("random_scene", matches)) => {
+            // this is already the default, so we only have to modify if the
+            // checkerboard option is selected
+            if matches.is_present("checkerboard") {
+                world = Arc::new(random_scene(&mut rng, true));
+            } else
+            {
+                world = Arc::new(random_scene(&mut rng, false));
+            }
+
+            matches
+        },
+        Some(("two_spheres", matches)) => {
+            // we need to change the camera as well as populate a different world
+            look_from = vect!(13, 2, 3);
+            look_at = vect!(0, 0, 0);
+            dist_to_focus = 10.0;
+            APERTURE = 0.0;
+            camera = Camera::new(
+                look_from,
+                look_at,
+                vect!(0,1,0),
+                20.,
+                ASPECT_RATIO,
+                APERTURE,
+                dist_to_focus,
+                0.0,
+                1.0);
+            world = Arc::new(two_spheres());
+            matches
+        },
+        _ => unreachable!("clap should ensure we don't get here"),
+    };
+    //eprintln!("first get_matches {:?}", matches);
+
+    let camera = camera;
+
+
+
+
+
+    let mut bvh = Bvh::new();
+    bvh.add_hitlist(& mut world, start_time_in_sec, stop_time_in_sec);
+    let world = Arc::new(bvh.build());
+
 
     // Render
     println!("P3\n{} {}\n255", IMAGE_WIDTH, IMAGE_HEIGHT);
