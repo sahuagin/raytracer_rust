@@ -1,3 +1,5 @@
+//use clap::{arg, App, Command, AppSettings, SubCommand};
+use clap::Command;
 #[allow(unused_imports)]
 use rand::Rng;
 use rtlib;
@@ -22,42 +24,167 @@ use rtlib::util::{color, random_scene, write_color};
 use rtlib::vec3::Color;
 use rtlib::bvh::Bvh;
 
+
 fn main() {
+    #[derive(Debug, Copy, Clone)]
+    struct RenderInfo {
+        depth: i32,
+        #[allow(dead_code)]
+        fast: bool,
+        samples: i32,
+        vfov: f32,
+        width: i32,
+        aperture: f32,
+        start: f32,
+        stop: f32,
+    }
+
+    let mut ri = RenderInfo {
+        depth: 500,
+        fast: false,
+        samples: 500,
+        vfov: 8.0,
+        width: 2000,
+        aperture: 0.2,
+        start: 0.0,
+        stop: 0.0,
+    };
+
+    let cmd = clap::Command::new("rt")
+        .bin_name("rt").arg(
+                clap::arg!(-f --fast "Set default values to help with adjusting scene.")
+                .required(false)
+            ).arg(
+                clap::arg!(-d --max_depth <DEPTH> "Maximum depth to follow ray bounces. Default: 500")
+                .required(false)
+                .default_value("500")
+                .validator(|s| s.parse::<i32>())
+            ).arg(
+                clap::arg!(-s --num_samples <SAMPLES> "Number of anti-aliasing samples per pixel. Default: 500")
+                .required(false)
+                .default_value("500")
+                .validator(|s| s.parse::<i32>())
+            ).arg(
+                clap::arg!(-v --vfov <FOV> "Vertical FOV. Defaults: 8.0")
+                .required(false)
+                .default_value("8.0")
+                .validator(|s| s.parse::<f32>())
+            ).arg(
+                clap::arg!(-w --image_width <WIDTH> "Image width. Height is calculated from this using a ratio. Default: 2000")
+                .required(false)
+                .default_value("2000")
+                .validator(|s| s.parse::<i32>())
+            ).arg(
+                clap::arg!(-a --aperture <APERTURE> "Set the aperture to create impression of blur in foreground and background. Default: 0.2")
+                .required(false)
+                .default_value("0.2")
+                .validator(|s| s.parse::<f32>())
+            ).arg(
+                clap::arg!(--start_time <START> "Time in seconds to start the render. If set, need to set stop_time as well. Default: 0.0")
+                .required(false)
+                .default_value("0.0")
+                .validator(|s| s.parse::<f32>())
+            ).arg(
+                clap::arg!(--stop_time <STOP> "Time in seconds to stop the render. You should set start_time as well, but if not, will use start_time default. Default: 0.0")
+                .required(false)
+                .default_value("0.0")
+                .validator(|s| s.parse::<f32>())
+            )
+        .subcommand_required(true)
+        .subcommand(
+            Command::new("random_scene")
+            .about("Generates the cover of the RayTracing book. 3 orbs in center of picture, 100 spheres of random textures around. One large sphere for 'floor'.")
+            );
+
+    let matches = cmd.get_matches();
+
+    println!("What we got on the cmdline {:?}", matches);
+
+    // NOTE: If there is a default value for something, it'll always
+    // show as "present", so we know we have settings for all of the
+    // ones we have as default.
+    ri.samples = matches.value_of_t("num_samples").expect("Number of samples is required.");
+    println!("We got a number of samples of: {:?}", ri.samples);
+    ri.depth = matches.value_of_t("max_depth").expect("Maximum depth is required.");
+    println!("We got a max depth of: {:?}", ri.depth);
+    ri.vfov = matches.value_of_t("vfov").expect("Vertical FOV is required.");
+    println!("We got a vfov of: {:?}", ri.vfov);
+    ri.width = matches.value_of_t("image_width").expect("Image width required.");
+    println!("We got a width of: {:?}", ri.width);
+    ri.aperture = matches.value_of_t("aperture").expect("Aperture required.");
+    println!("We got a aperture of: {:?}", ri.aperture);
+    ri.start = matches.value_of_t("start_time").expect("Start time required.");
+    println!("We got a start time of: {:?} seconds", ri.start);
+    ri.stop = matches.value_of_t("stop_time").expect("Stop time required.");
+    println!("We got a stop time of: {:?} seconds", ri.stop);
+
+    if matches.is_present("fast") {
+       ri = RenderInfo{
+            fast: true,
+            depth: 5,
+            samples: 5,
+            vfov: ri.vfov,
+            width: 200,
+            aperture: ri.aperture,
+            start: ri.start,
+            stop: ri.stop,
+       }; 
+    }
+    // make read only
+    let ri = ri;
+
+    println!("Render info after arg parsing. {:?}", ri);
+
+    
     // For error handling
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
     let mut rng = rand::thread_rng();
+
+    // we'll use randopm_scene as the default
+    let mut world = Arc::new(random_scene(&mut rng));
+
+    // now we handle which scene we want to render. That is really how we make the world.
+    let matches = match matches.subcommand() {
+        Some(("random_scene", matches)) => matches, // nothing to do, as this is the default
+        _ => unreachable!("clap should ensure we don't get here"),
+    };
+    println!("first get_matches {:?}", matches);
+
+
 
     // if you make it 2000x1000 that's 100x, and then 100 more samples of each,
     // and then test against all the objects again for differaction. And then
     // do a depth of 50.
     // NOTE: 2000x1000 takes about 40 minutes at this point
     // only 92s as of this commit. Run in release instead of debug.
-    const SAMPLES_PER_PIXEL: i32 = 500; // number of anti-aliasing samples
-    const MAX_DEPTH: i32 = 500;
-    // GO FAST!!!
-    //const SAMPLES_PER_PIXEL: i32 = 5; // number of anti-aliasing samples
-    //const MAX_DEPTH: i32 = 5;
+    #[allow(non_snake_case)]
+    let SAMPLES_PER_PIXEL: i32 = ri.samples; // number of anti-aliasing samples
+    #[allow(non_snake_case)]
+    let MAX_DEPTH: i32 = ri.depth;
     //let radian: f64 = (std::f64::consts::PI/4.0).cos();
-    let vfov: f64 = 8.0;
+    let vfov: f64 = ri.vfov as f64;
     //let aspect: f64 = nx as f64 / ny as f64;
     const ASPECT_RATIO: f64 = 2.0 / 1.0; // eg 2000x1000, 800x400, 200x100
                                          // instead of setting the values and generating the aspect ratio,
                                          // we'll say how wide we want the overall image, and let the
                                          // ratio determine the height instead.
-    const IMAGE_WIDTH: i32 = 2000; // image width
-    const IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
-    const NUM_PIXELS: i32 = IMAGE_WIDTH * IMAGE_HEIGHT;
+    #[allow(non_snake_case)]
+    let IMAGE_WIDTH: i32 = ri.width; // image width
+    #[allow(non_snake_case)]
+    let IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
+    #[allow(non_snake_case)]
+    let NUM_PIXELS: i32 = IMAGE_WIDTH * IMAGE_HEIGHT;
 
     let look_from = vect!(25.0, 2.5, 5.0);
     let look_at = rtmacros::vect!(3.0, 0.75, 0.75);
     let vup = rtmacros::vect!(0.0, 1.0, 0.0);
     let dist_to_focus: f64 = (look_from - look_at).length();
-    const APERTURE: f64 = 0.2;
+    #[allow(non_snake_case)]
+    let APERTURE: f64 = ri.aperture as f64;
 
     let start_time_in_sec:f64 = 0.0;
     let stop_time_in_sec:f64 = 0.0;
-    let mut world = Arc::new(random_scene(&mut rng));
     let mut bvh = Bvh::new();
     bvh.add_hitlist(& mut world, start_time_in_sec, stop_time_in_sec);
     let world = Arc::new(bvh.build());
