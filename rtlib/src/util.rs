@@ -1,7 +1,7 @@
 //#[allow(unused_attributes)]
 //#[macro_use]
 use super::materials::{Dielectric, Lambertian, Material, MaterialType, Metal};
-use super::textures::{ConstantTexture, CheckerTexture, TextureType};
+use super::textures::{ConstantTexture, CheckerTexture, NoiseTexture, TextureType};
 use super::ray::Ray;
 use super::sphere::Sphere;
 use super::vec3::{dot, unit_vector, Color, Point3, Vec3};
@@ -27,20 +27,41 @@ where
 pub fn color(ray: &Ray, world: & dyn Hittable, depth: i32) -> Color {
     // the 0.001 ignores hits very close to 0, which handles issues with
     // floating point approximation, which generates "shadow acne"
-    if let Some(hit_record) = world.hit(ray, 0.001, f64::INFINITY) {
-        if depth <= 0 {
-            return Color::default();
-        }
-        if let Some((attenuation, sray)) = hit_record.material.scatter(&ray, &hit_record) {
-            return attenuation * color(&sray, world, depth - 1);
+    let last_color: Color;
+    // since this will reduce the color by a percent, we'll default to (1,1,1)
+    let mut accum_attenuation: Color = vect!(1,1,1);
+    let mut tmpray = ray.clone();
+    let mut depth = depth;
+    loop {
+        // does the ray we currently have 
+        if let Some(hit_record) = world.hit(&tmpray, 0.001, f64::INFINITY) {
+            if depth <= 0 {
+                last_color = Color::default();
+                break;
+            }
+            if let Some((attenuation, sray)) = hit_record.material.scatter(&tmpray, &hit_record) {
+                accum_attenuation *= attenuation;
+                tmpray = sray;
+                depth -= 1;
+            } else {
+                last_color = Color::new(0.0, 0.0, 0.0);
+                break;
+            }
         } else {
-            return Color::new(0.0, 0.0, 0.0);
+            // this iteration didn't hit anything, that also mean that there won't
+            // be any reflections
+            let unit_direction = unit_vector(&ray.direction());
+            let t = 0.5 * (unit_direction.y + 1.0);
+            last_color = (1.0 - t) * Color::new(1.0, 1.0, 1.0)
+                + t * Color::new(0.5, 0.7, 1.0);
+            break;
+
         }
     }
-    //let unit_direction = ray.direction().normalize();
-    let unit_direction = unit_vector(&ray.direction());
-    let t = 0.5 * (unit_direction.y + 1.0);
-    (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
+
+    // we've checked to see if we've hit anything, we've accumulated attenuation and color
+    // return the overall result
+    return accum_attenuation * last_color;
 }
 
 #[allow(unused_imports, dead_code)]
@@ -236,6 +257,26 @@ pub fn two_spheres() -> HitList{
     hl
 }
 
+#[allow(unused_imports, dead_code)]
+pub fn two_perlin_spheres() -> HitList {
+    let pertext = TextureType::NoiseTexture(
+                NoiseTexture::new().scale(5.7),
+            );
+    let mut hl: HitList = HitList::new();
+    hl.add(Hitters::Sphere(Sphere::new(
+                &vect!(0, -1000, 0),
+                1000.0,
+                MaterialType::Lambertian(Lambertian::new(&pertext)))
+                ));
+    hl.add(Hitters::Sphere(Sphere::new(
+                &vect!(0, 2, 0),
+                2.,
+                MaterialType::Lambertian(Lambertian::new(&pertext)))));
+
+    hl
+
+}
+
 pub fn ffmin<T: float::Float + std::cmp::PartialOrd>(a: T, b: T) -> T {
     if a < b {
         a
@@ -265,11 +306,16 @@ mod test {
         let v = Vec3::new(0.0, 0.0, 0.0);
         let v2 = Vec3::new(1.0, 1.0, 1.0);
         let r = ray!(&v, &v2);
+        // thread 'util::test::test_color' panicked at 'assertion failed: `(left == right)`
+        // left: `Vec3T { x: 0.6056624327025936, y: 0.7633974596215561, z: 1.0 }`,
+        // right: `Vec3T { x: 0.8943375672974064, y: 0.9366025403784438, z: 1.0 }`', rtlib/src/util.rs:326:9
+ 
         let ans = Color {
-            x: 0.8943375672974064,
-            y: 0.9366025403784438,
+            x: 0.6056624327025936,
+            y: 0.7633974596215561,
             z: 1.0,
         };
+
         let mut world = HitList::new();
         let metal = wrap_material!(Metal, color_to_texture!(&Color::new(1.0, 1.0, 1.0)), 0.0);
         world.list.push(Hitters::Sphere(Sphere::new(

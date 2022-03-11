@@ -1,4 +1,6 @@
 use super::vec3::{Color, Vec3};
+use super::perlin::Perlin;
+use super::vect;
 
 pub trait Texture { fn value(&self, u: f64, v: f64, p: &Vec3) -> Color;
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result;
@@ -41,6 +43,7 @@ impl NoneTexture {
 pub enum TextureType {
     ConstantTexture(ConstantTexture),
     CheckerTexture(CheckerTexture),
+    NoiseTexture(NoiseTexture),
     Nothing(NoneTexture),
 }
 
@@ -52,6 +55,7 @@ impl Texture for TextureType {
         match self {
             TextureType::ConstantTexture(x) => x.color,
             TextureType::CheckerTexture(x) => x.value(u, v, p),
+            TextureType::NoiseTexture(x) => x.value(u, v, p),
             TextureType::Nothing(_x) => Color::new(0.0, 0.0, 0.0),
         }
     }
@@ -59,6 +63,7 @@ impl Texture for TextureType {
         match self {
             TextureType::ConstantTexture(x) => x.inner_fmt(f),
             TextureType::CheckerTexture(x) => x.inner_fmt(f),
+            TextureType::NoiseTexture(x) => x.inner_fmt(f),
             TextureType::Nothing(x) => x.inner_fmt(f),
         }
     }
@@ -66,6 +71,7 @@ impl Texture for TextureType {
         match self {
             TextureType::ConstantTexture(x) => x.albedo(),
             TextureType::CheckerTexture(x) => x.albedo(),
+            TextureType::NoiseTexture(x) => x.albedo(),
             TextureType::Nothing(x) => x.albedo(),
         }
     }
@@ -158,6 +164,55 @@ impl Texture for CheckerTexture {
         Box::new(self.clone())
     }
     
+}
+
+#[derive(Clone, Default)]
+pub struct NoiseTexture {
+    inner_noise: Perlin,
+    scale: Option<f64>,
+}
+
+impl NoiseTexture {
+
+    pub fn new() -> Self {
+        NoiseTexture {
+            inner_noise: Perlin::new(),
+            scale: Some(1.0),
+        }
+    }
+
+    pub fn noise(&self, p: &Vec3) -> f64 {
+        self.inner_noise.noise(&p)
+    }
+
+    pub fn scale(mut self, sc: f64 ) -> Self {
+        self.scale = Some(sc);
+        self
+    }
+}
+
+impl Texture for NoiseTexture {
+    // if we create an actual texture that takes these floats
+    // between 0 and 1 it will create grey colors
+    fn value(&self, _u: f64, _v: f64, p: &Vec3) -> Color {
+        //let noise_vec = self.scale.unwrap() * *p;
+        let noise_vec = p;
+        //vect!(1,1,1) * 0.5 * (1.0 +self.inner_noise.turbulance(&noise_vec, 7)).sin()
+        vect!(1,1,1) * 0.5 * (1.0 + (self.scale.unwrap() + 10.0 * self.inner_noise.turbulance(&noise_vec, 7)).sin())
+    }
+
+    fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Perlin noise: output would just be random.")
+    }
+
+    fn albedo(&self) -> TextureType {
+        TextureType::NoiseTexture(self.clone())
+    }
+
+    fn box_clone(&self) -> Box<dyn Texture> {
+        Box::new(self.clone())
+    }
+ 
 }
 
 //#[allow(unused_macros, unused_imports)]

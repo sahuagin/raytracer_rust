@@ -190,7 +190,7 @@ mod test {
     #[test]
     fn test_build_bvh() {
         let mut rng = rand::thread_rng();
-        let mut world = std::sync::Arc::new(random_scene(&mut rng));
+        let mut world = std::sync::Arc::new(random_scene(&mut rng, false));
 
         let mut bvh = BvhNode::default();
         bvh.add_hitlist(& mut world, 0., 0.);

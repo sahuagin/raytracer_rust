@@ -20,7 +20,7 @@ use rtlib::materials::{Dielectric, Lambertian, Metal};
 #[allow(unused_imports)]
 use rtlib::sphere::Sphere;
 #[allow(unused_imports)]
-use rtlib::util::{color, random_scene, two_spheres, write_color};
+use rtlib::util::{color, random_scene, two_perlin_spheres, two_spheres, write_color};
 use rtlib::vec3::Color;
 use rtlib::bvh::Bvh;
 use rtlib::hitlist::HitList;
@@ -100,6 +100,10 @@ fn main() {
         .subcommand(
             Command::new("two_spheres")
             .about("Display 2 large checkerboard spheres.")
+            ).
+        subcommand(
+            Command::new("two_perlin_spheres")
+            .about("Display 2 spheres with Perlin noise.")
             );
 
     let matches = cmd.get_matches();
@@ -110,19 +114,12 @@ fn main() {
     // show as "present", so we know we have settings for all of the
     // ones we have as default.
     ri.samples = matches.value_of_t("num_samples").expect("Number of samples is required.");
-    //eprintln!("We got a number of samples of: {:?}", ri.samples);
     ri.depth = matches.value_of_t("max_depth").expect("Maximum depth is required.");
-    //eprintln!("We got a max depth of: {:?}", ri.depth);
     ri.vfov = matches.value_of_t("vfov").expect("Vertical FOV is required.");
-    //eprintln!("We got a vfov of: {:?}", ri.vfov);
     ri.width = matches.value_of_t("image_width").expect("Image width required.");
-    //eprintln!("We got a width of: {:?}", ri.width);
     ri.aperture = matches.value_of_t("aperture").expect("Aperture required.");
-    //eprintln!("We got a aperture of: {:?}", ri.aperture);
     ri.start = matches.value_of_t("start_time").expect("Start time required.");
-    //eprintln!("We got a start time of: {:?} seconds", ri.start);
     ri.stop = matches.value_of_t("stop_time").expect("Stop time required.");
-    //eprintln!("We got a stop time of: {:?} seconds", ri.stop);
 
     if matches.is_present("fast") {
        ri = RenderInfo{
@@ -227,15 +224,32 @@ fn main() {
             world = Arc::new(two_spheres());
             matches
         },
+        Some(("two_perlin_spheres", matches)) => {
+            // we need to change the camera as well as populate a different world
+            look_from = vect!(13, 2, 3);
+            look_at = vect!(0, 0, 0);
+            dist_to_focus = 10.0;
+            APERTURE = 0.0;
+            camera = Camera::new(
+                look_from,
+                look_at,
+                vect!(0,1,0),
+                20.,
+                ASPECT_RATIO,
+                APERTURE,
+                dist_to_focus,
+                0.0,
+                1.0);
+            world = Arc::new(two_perlin_spheres());
+            matches
+
+        }
         _ => unreachable!("clap should ensure we don't get here"),
     };
     //eprintln!("first get_matches {:?}", matches);
+    eprintln!("the render data is {:?}", &ri);
 
     let camera = camera;
-
-
-
-
 
     let mut bvh = Bvh::new();
     bvh.add_hitlist(& mut world, start_time_in_sec, stop_time_in_sec);
