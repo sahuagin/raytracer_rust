@@ -314,6 +314,7 @@ impl Hittable for Aabb {
             p: vect!(0, 0, 0),
             normal: vect!(0, 0, 0),
             material: MaterialType::Nothing(NoneMaterial),
+            texture_coord: None,
             front_face: false,
         })
     }
@@ -356,6 +357,7 @@ impl Hittable for AabbF {
             p: vect!(0, 0, 0),
             normal: vect!(0, 0, 0),
             material: MaterialType::Nothing(NoneMaterial),
+            texture_coord: None,
             front_face: false,
         })
     }

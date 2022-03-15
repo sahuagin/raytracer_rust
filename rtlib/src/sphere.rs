@@ -1,8 +1,8 @@
 use super::aabb::{AabbF, AABB};
-use super::hittable::{HitRecord, Hittable};
+use super::hittable::{HitRecord, Hittable, TextureCoord};
 use super::materials::MaterialType;
 use super::ray::Ray;
-use super::util::{ffmax, ffmin};
+use super::util::{ffmax, ffmin, uv_for_sphere};
 use super::vec3::{dot, Vec3};
 use super::vect;
 use crate::prelude::BoundingBox;
@@ -45,6 +45,7 @@ impl Hittable for Sphere {
                     normal: (pat - self.center) / self.radius,
                     front_face: false,
                     material: self.material.clone(),
+                    texture_coord: Some(TextureCoord::default()),
                 });
                 return rec;
             }
@@ -57,6 +58,7 @@ impl Hittable for Sphere {
                     normal: (pat - self.center) / self.radius,
                     front_face: false,
                     material: self.material.clone(),
+                    texture_coord: Some(uv_for_sphere(&pat)),
                 });
                 return rec;
             }
@@ -75,6 +77,7 @@ impl Hittable for Sphere {
         )))
     }
 }
+
 
 #[allow(unused_imports, dead_code)]
 #[derive(Default, Clone)]
@@ -118,24 +121,26 @@ impl Hittable for MovingSphere {
             let disc_sq = discriminant.sqrt();
             let mut temp = (-b - disc_sq) / a;
             if temp < t_max && temp > t_min {
-                let p = r.point_at_parameter(temp);
+                let pat = r.point_at_parameter(temp);
                 retrec.replace(HitRecord {
                     t: temp,
-                    p: p,
-                    normal: (p - self.center_at_time(r.time())) / self.radius,
+                    p: pat,
+                    normal: (pat - self.center_at_time(r.time())) / self.radius,
                     material: self.material.clone(),
+                    texture_coord: Some(uv_for_sphere(&pat)),
                     front_face: false,
                 });
                 return retrec;
             }
             temp = (-b + disc_sq) / a;
             if temp < t_max && temp > t_min {
-                let p = r.point_at_parameter(temp);
+                let pat = r.point_at_parameter(temp);
                 retrec.replace(HitRecord {
                     t: temp,
-                    p: p,
-                    normal: (p - self.center_at_time(r.time())) / self.radius,
+                    p: pat,
+                    normal: (pat - self.center_at_time(r.time())) / self.radius,
                     material: self.material.clone(),
+                    texture_coord: Some(uv_for_sphere(&pat)),
                     front_face: false,
                 });
                 return retrec;
@@ -196,6 +201,7 @@ mod test {
     use crate::textures::ConstantTexture;
     #[allow(unused_imports)]
     use crate::vec3::{Color, Point3, Vec3};
+    use crate::util;
 
     #[test]
     fn test_sphere_hit() {
@@ -208,19 +214,21 @@ mod test {
         let center = Point3::new(2.0, 2.0, 2.0);
         let radius = 3.0;
         let s = Sphere::new(&center, radius, l.clone());
-        let hitrec = HitRecord {
-            t: 0.26794919243112264,
-            p: Vec3 {
+        let pat = Vec3 {
                 x: 0.26794919243112264,
                 y: 0.26794919243112264,
                 z: 0.26794919243112264,
-            },
+        };
+        let hitrec = HitRecord {
+            t: 0.26794919243112264,
+            p: pat,
             normal: Vec3 {
                 x: -0.5773502691896258,
                 y: -0.5773502691896258,
                 z: -0.5773502691896258,
             },
             front_face: false,
+            texture_coord: Some(util::uv_for_sphere(&pat)),
             material: l.clone(),
         };
 

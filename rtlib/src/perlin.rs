@@ -132,6 +132,7 @@ pub fn trilinear_interp(c: &[[[Vec3; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 
     accum
 }
 
+#[cfg(test)]
 mod test {
 #[allow(unused_imports)]
 use rand::Rng;

@@ -304,6 +304,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e74d72e0f9b65b5b4ca49a346af3976df0f9c61d550727f349ecd559f251a26c"
 
 [[package]]
+name = "libm"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "33a33a362ce288760ec6a508b94caaec573ae7d3bbbd91b87aa0bad4456839db"
+
+[[package]]
 name = "libmath"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -664,10 +670,12 @@ name = "rtlib"
 version = "0.1.0"
 dependencies = [
  "criterion",
+ "libm",
  "libmath",
  "num",
  "num-traits",
  "rand 0.8.4",
+ "stb_image_rust",
 ]
 
 [[package]]
@@ -750,6 +758,12 @@ dependencies = [
  "ryu",
  "serde",
 ]
+
+[[package]]
+name = "stb_image_rust"
+version = "2.27.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d682a002ab01d5e09f47d22cfe4a55a8451cdaef5b0f87d6c8b8c3bc4360b6aa"
 
 [[package]]
 name = "strsim"

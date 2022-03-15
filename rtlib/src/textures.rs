@@ -1,6 +1,8 @@
 use super::vec3::{Color, Vec3};
 use super::perlin::Perlin;
+use super::util::{self, Image};
 use super::vect;
+use std::marker::PhantomData;
 
 pub trait Texture { fn value(&self, u: f64, v: f64, p: &Vec3) -> Color;
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result;
@@ -43,6 +45,7 @@ impl NoneTexture {
 pub enum TextureType {
     ConstantTexture(ConstantTexture),
     CheckerTexture(CheckerTexture),
+    MappedTexture(MappedTexture),
     NoiseTexture(NoiseTexture),
     Nothing(NoneTexture),
 }
@@ -55,6 +58,7 @@ impl Texture for TextureType {
         match self {
             TextureType::ConstantTexture(x) => x.color,
             TextureType::CheckerTexture(x) => x.value(u, v, p),
+            TextureType::MappedTexture(x) => x.value(u, v, p),
             TextureType::NoiseTexture(x) => x.value(u, v, p),
             TextureType::Nothing(_x) => Color::new(0.0, 0.0, 0.0),
         }
@@ -63,6 +67,7 @@ impl Texture for TextureType {
         match self {
             TextureType::ConstantTexture(x) => x.inner_fmt(f),
             TextureType::CheckerTexture(x) => x.inner_fmt(f),
+            TextureType::MappedTexture(x) => x.inner_fmt(f),
             TextureType::NoiseTexture(x) => x.inner_fmt(f),
             TextureType::Nothing(x) => x.inner_fmt(f),
         }
@@ -71,6 +76,7 @@ impl Texture for TextureType {
         match self {
             TextureType::ConstantTexture(x) => x.albedo(),
             TextureType::CheckerTexture(x) => x.albedo(),
+            TextureType::MappedTexture(x) => x.albedo(),
             TextureType::NoiseTexture(x) => x.albedo(),
             TextureType::Nothing(x) => x.albedo(),
         }
@@ -215,6 +221,64 @@ impl Texture for NoiseTexture {
  
 }
 
+#[derive(Clone, Debug)]
+pub struct MappedTexture {
+    pub image: Image,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct MappedTextureBuilder<ImageFilenameSet>
+where
+    ImageFilenameSet: util::ToAssign
+{ 
+    // mandatory field
+    image_filename_set: PhantomData<ImageFilenameSet>,
+    filename: String
+}
+
+impl<ImageFilenameSet> MappedTextureBuilder<ImageFilenameSet>
+where
+    ImageFilenameSet: util::ToAssign
+{
+    pub fn with_file(self, filename: &dyn ToString) -> MappedTextureBuilder<util::Yes> {
+        MappedTextureBuilder {
+            image_filename_set: PhantomData {},
+            filename: filename.to_string(),
+        }
+    }
+
+}
+
+impl MappedTextureBuilder<util::Yes> {
+    pub fn build(self) -> MappedTexture {
+        MappedTexture {
+            image: Image::new(&self.filename)
+        }
+    }
+}
+
+
+impl Texture for MappedTexture {
+    fn value(&self, u:f64, v: f64, p: &Vec3) -> Color {
+        return Color::default();
+        unimplemented!("To do!");
+    }
+
+    fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        unimplemented!("output information about the image");
+        write!(f, "This should output the name of the file used. Perhaps the x, y coord and number of components.")
+    }
+
+    fn albedo(&self) -> TextureType {
+        TextureType::MappedTexture(self.clone())
+    }
+
+    fn box_clone(&self) -> Box<dyn Texture> {
+        Box::new(self.clone())
+    }
+ 
+}
+
 //#[allow(unused_macros, unused_imports)]
 //#[macro_export]
 //macro_rules! color_to_texture{
@@ -240,8 +304,18 @@ impl Texture for NoiseTexture {
 //
 #[cfg(test)]
 mod test {
-    use crate::textures::{TextureType, CheckerTexture, ConstantTexture, Texture};
+    #[allow(unused_imports)]
+    use crate::textures::{
+        TextureType,
+        CheckerTexture,
+        ConstantTexture,
+        MappedTexture,
+        MappedTextureBuilder,
+        Texture,
+    };
+    use crate::util;
     use crate::vect;
+    use std::{env, path::PathBuf};
 
     #[test]
     fn test_checker_texture() {
@@ -257,11 +331,33 @@ mod test {
        for x in 0..100 {
             for y in 0..100 {
                 for z in 0..100 {
+
+                    #[allow(unused_variables)]
                     let tmp_vec = vect!(x, y, z);
-                    println!("{} at point {}", checker.value(0., 0., &tmp_vec), &tmp_vec);
+                    //poluting the output
+                    //println!("{} at point {}", checker.value(0., 0., &tmp_vec), &tmp_vec);
                 }
             }
        }
  
+    }
+
+    #[test]
+    fn test_mapped_texture_builder() {
+        let root_dir = &env::var("CARGO_MANIFEST_DIR").expect("$CARGO_MANIFEST_DIR");
+        let mut source_path = PathBuf::from(root_dir);
+        source_path.push("../results");
+        source_path.push("test_image.bmp");
+
+        let image_texture =
+            MappedTextureBuilder::<util::No>::default().with_file(
+                &String::from(source_path.as_os_str().to_str().unwrap())).build();
+
+        let img = image_texture.image;
+        let c3 = img.get(115, 164);
+        let ans3 = vect!(115./255., 164./255., (115_u32*164_u32).div_floor(255) as f64/255.);
+        assert_eq!(c3.ok(), Some(ans3));
+
+
     }
 }

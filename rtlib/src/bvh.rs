@@ -247,6 +247,7 @@ mod test {
                 z: -0.5773502691896258,
             },
             front_face: false,
+            texture_coord: None,
             material: l.clone(),
         };
         let mut hl = HitList::new();

@@ -10,6 +10,7 @@ use rtmacros::vect;
 use std::{
     io::{stderr, Write},
     sync::Arc,
+    path::Path,
 };
 
 use rayon::prelude::*;
@@ -20,14 +21,14 @@ use rtlib::materials::{Dielectric, Lambertian, Metal};
 #[allow(unused_imports)]
 use rtlib::sphere::Sphere;
 #[allow(unused_imports)]
-use rtlib::util::{color, random_scene, two_perlin_spheres, two_spheres, write_color};
+use rtlib::util::{color, Image, random_scene, two_perlin_spheres, two_spheres, write_color};
 use rtlib::vec3::Color;
 use rtlib::bvh::Bvh;
 use rtlib::hitlist::HitList;
 
 
 fn main() {
-    #[derive(Debug, Copy, Clone)]
+    #[derive(Debug, Clone)]
     struct RenderInfo {
         depth: i32,
         #[allow(dead_code)]
@@ -38,6 +39,7 @@ fn main() {
         aperture: f32,
         start: f32,
         stop: f32,
+        texture: Option<Image>,
     }
 
     let mut ri = RenderInfo {
@@ -49,6 +51,7 @@ fn main() {
         aperture: 0.2,
         start: 0.0,
         stop: 0.0,
+        texture: None,
     };
 
     let cmd = clap::Command::new("rt")
@@ -90,6 +93,10 @@ fn main() {
                 .required(false)
                 .default_value("0.0")
                 .validator(|s| s.parse::<f32>())
+            ).arg(
+                clap::arg!(--globe_texture <FILE> "An image that should be used if a textured globe is to be displayed.")
+                .required(false)
+                .allow_invalid_utf8(true)
             )
         .subcommand_required(true)
         .subcommand(
@@ -120,6 +127,10 @@ fn main() {
     ri.aperture = matches.value_of_t("aperture").expect("Aperture required.");
     ri.start = matches.value_of_t("start_time").expect("Start time required.");
     ri.stop = matches.value_of_t("stop_time").expect("Stop time required.");
+    if let Some(raw_texture_path) = matches.value_of_os("globe_texture") {
+        let config_path = Path::new(raw_texture_path);
+        ri.texture = Some(Image::new(&config_path.display()));
+    }
 
     if matches.is_present("fast") {
        ri = RenderInfo{
@@ -131,6 +142,7 @@ fn main() {
             aperture: ri.aperture,
             start: ri.start,
             stop: ri.stop,
+            texture: ri.texture,
        }; 
     }
     // make read only
@@ -247,7 +259,7 @@ fn main() {
         _ => unreachable!("clap should ensure we don't get here"),
     };
     //eprintln!("first get_matches {:?}", matches);
-    eprintln!("the render data is {:?}", &ri);
+    //eprintln!("the render data is {:?}", &ri);
 
     let camera = camera;
 

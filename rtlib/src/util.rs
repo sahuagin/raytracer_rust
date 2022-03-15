@@ -1,7 +1,17 @@
+use std::alloc::{self, Global};
+use std::mem;
+use libm;
+use std::fs::File;
+use std::io::prelude::*;
+//use stb_image_rust::stbi_load_from_memory;
 //#[allow(unused_attributes)]
 //#[macro_use]
 use super::materials::{Dielectric, Lambertian, Material, MaterialType, Metal};
-use super::textures::{ConstantTexture, CheckerTexture, NoiseTexture, TextureType};
+use super::textures::{
+    ConstantTexture,
+    CheckerTexture,
+    NoiseTexture,
+    TextureType};
 use super::ray::Ray;
 use super::sphere::Sphere;
 use super::vec3::{dot, unit_vector, Color, Point3, Vec3};
@@ -10,9 +20,9 @@ use crate::hittable::Hittable;
 use rand::Rng;
 #[allow(unused_imports)]
 use std::io::{self, Write};
-//use super::textures::{ConstantTexture, TextureType };
 use super::hitlist::HitList;
-use super::hittable::Hitters;
+#[allow(unused_imports)]
+use super::hittable::{Hitters, TextureCoord};
 use num_traits::float;
 
 #[allow(unused_imports, dead_code)]
@@ -22,6 +32,186 @@ where
 {
     thing.unwrap_or_default()
 }
+
+// better way to do optional with the builder pattern
+// use std::fmt::Debug
+// use std::market::PhantomData;
+// #[derive(Debug, Default)]
+// example: 
+// pub struct Yes;
+//#[derive(Debug, Default)]
+//pub struct No;
+//
+//pub trait ToAssign: Debug {}
+//pub trait Assigned: ToAssign {}
+//pub trait NotAssigned: ToAssign {}
+//
+//impl ToAssign for Yes {}
+//impl ToAssign for No {}
+//
+//impl Assigned for Yes {}
+//impl NotAssigned for No {}
+//
+//pub fn cook_pasta(
+//    pasta_type: String,
+//    pasta_name: Option<String>,
+//    pasta_length: u64,
+//    altitude: u64,
+//    water_type: Option<String>,
+//) {
+//    // your code here
+//    println!(
+//        "cooking pasta! -> {:?}, {:?}, {:?}, {:?}, {:?}",
+//        pasta_type, pasta_name, pasta_length, altitude, water_type
+//    );
+//}
+//
+//#[derive(Debug, Clone, Default)]
+//pub struct CookPastaBuilder<PASTA_TYPE_SET, PASTA_LENGTH_SET, ALTITUDE_SET>
+//where
+//    PASTA_TYPE_SET: ToAssign,
+//    PASTA_LENGTH_SET: ToAssign,
+//    ALTITUDE_SET: ToAssign,
+//{
+//    pasta_type_set: PhantomData<PASTA_TYPE_SET>,
+//    pasta_length_set: PhantomData<PASTA_LENGTH_SET>,
+//    altitude_set: PhantomData<ALTITUDE_SET>,
+//
+//    pasta_type: String,
+//    pasta_name: Option<String>,
+//    pasta_length: u64,
+//    altitude: u64,
+//    water_type: Option<String>,
+//}
+//
+//impl<PASTA_TYPE_SET, PASTA_LENGTH_SET, ALTITUDE_SET>
+//    CookPastaBuilder<PASTA_TYPE_SET, PASTA_LENGTH_SET, ALTITUDE_SET>
+//where
+//    PASTA_TYPE_SET: ToAssign,
+//    PASTA_LENGTH_SET: ToAssign,
+//    ALTITUDE_SET: ToAssign,
+//{
+//    pub fn with_pasta_type(
+//        self,
+//        pasta_type: String,
+//    ) -> CookPastaBuilder<Yes, PASTA_LENGTH_SET, ALTITUDE_SET> {
+//        CookPastaBuilder {
+//            pasta_type_set: PhantomData {},
+//            pasta_length_set: PhantomData {},
+//            altitude_set: PhantomData {},
+//            pasta_type,
+//            pasta_name: self.pasta_name,
+//            pasta_length: self.pasta_length,
+//            altitude: self.altitude,
+//            water_type: self.water_type,
+//        }
+//    }
+//
+//    pub fn with_pasta_name(
+//        self,
+//        pasta_name: String,
+//    ) -> CookPastaBuilder<PASTA_TYPE_SET, PASTA_LENGTH_SET, ALTITUDE_SET> {
+//        CookPastaBuilder {
+//            pasta_type_set: PhantomData {},
+//            pasta_length_set: PhantomData {},
+//            altitude_set: PhantomData {},
+//            pasta_type: self.pasta_type,
+//            pasta_name: Some(pasta_name),
+//            pasta_length: self.pasta_length,
+//            altitude: self.altitude,
+//            water_type: self.water_type,
+//        }
+//    }
+//
+//    pub fn with_pasta_length(
+//        self,
+//        pasta_length: u64,
+//    ) -> CookPastaBuilder<PASTA_TYPE_SET, Yes, ALTITUDE_SET> {
+//        CookPastaBuilder {
+//            pasta_type_set: PhantomData {},
+//            pasta_length_set: PhantomData {},
+//            altitude_set: PhantomData {},
+//            pasta_type: self.pasta_type,
+//            pasta_name: self.pasta_name,
+//            pasta_length,
+//            altitude: self.altitude,
+//            water_type: self.water_type,
+//        }
+//    }
+//
+//    pub fn with_altitude(
+//        self,
+//        altitude: u64,
+//    ) -> CookPastaBuilder<PASTA_TYPE_SET, PASTA_LENGTH_SET, Yes> {
+//        CookPastaBuilder {
+//            pasta_type_set: PhantomData {},
+//            pasta_length_set: PhantomData {},
+//            altitude_set: PhantomData {},
+//            pasta_type: self.pasta_type,
+//            pasta_name: self.pasta_name,
+//            pasta_length: self.pasta_length,
+//            altitude,
+//            water_type: self.water_type,
+//        }
+//    }
+//
+//    pub fn with_water_type(
+//        self,
+//        water_type: String,
+//    ) -> CookPastaBuilder<PASTA_TYPE_SET, PASTA_LENGTH_SET, ALTITUDE_SET> {
+//        CookPastaBuilder {
+//            pasta_type_set: PhantomData {},
+//            pasta_length_set: PhantomData {},
+//            altitude_set: PhantomData {},
+//            pasta_type: self.pasta_type,
+//            pasta_name: self.pasta_name,
+//            pasta_length: self.pasta_length,
+//            altitude: self.altitude,
+//            water_type: Some(water_type),
+//        }
+//    }
+//}
+//
+//impl CookPastaBuilder<Yes, Yes, Yes> {
+//    pub fn execute(&self) {
+//        // your code here
+//        println!("cooking pasta! -> {:?}", self);
+//    }
+//}
+//
+//pub fn cook_pasta2() -> CookPastaBuilder<No, No, No> {
+//    CookPastaBuilder::default()
+//}
+//
+//fn main() {
+//    cook_pasta("Penne".to_owned(), None, 100, 300, Some("Salty".to_owned()));
+//
+//    cook_pasta2()
+//        .with_pasta_type("Penne".to_owned())
+//        .with_pasta_length(100)
+//        .with_water_type("Salty".to_owned())
+//        .with_altitude(300)
+//        .execute();
+//}
+
+
+// Putting the reusable parts here for the program
+#[derive(Debug, Default)]
+pub struct Yes;
+#[derive(Debug, Default)]
+pub struct No;
+
+pub trait ToAssign: std::fmt::Debug {}
+pub trait Assigned: ToAssign {}
+pub trait NotAssigned: ToAssign {}
+
+impl ToAssign for Yes {}
+impl ToAssign for No {}
+
+impl Assigned for Yes {}
+impl NotAssigned for No {}
+
+
 
 #[allow(unused_imports, dead_code)]
 pub fn color(ray: &Ray, world: & dyn Hittable, depth: i32) -> Color {
@@ -39,6 +229,7 @@ pub fn color(ray: &Ray, world: & dyn Hittable, depth: i32) -> Color {
                 last_color = Color::default();
                 break;
             }
+            // attenuation IS the color returned
             if let Some((attenuation, sray)) = hit_record.material.scatter(&tmpray, &hit_record) {
                 accum_attenuation *= attenuation;
                 tmpray = sray;
@@ -103,6 +294,16 @@ pub fn hit_sphere(center: &Point3, radius: f64, r: &Ray) -> f64 {
         return (-b - discriminant.sqrt()) / (2.0 * a);
     }
 }
+
+#[allow(unused_imports, dead_code)]
+pub fn uv_for_sphere(hitvec: &Vec3) -> TextureCoord {
+    let phi: f64 = libm::atan2(hitvec.z, hitvec.x);
+    let theta: f64 = libm::asin(hitvec.y);
+    TextureCoord{
+        u: 1. - (phi + std::f64::consts::PI) / (2. * std::f64::consts::PI),
+        v: (theta + std::f64::consts::PI/2.) / std::f64::consts::PI, }
+}
+
 #[allow(unused_imports, dead_code)]
 pub fn random_in_unit_sphere() -> Vec3 {
     let mut p: Option<Vec3> = None;
@@ -292,6 +493,130 @@ pub fn ffmax<T: float::Float + std::cmp::PartialOrd>(a: T, b: T) -> T {
     }
 }
 
+// should be read only
+unsafe impl Sync for Image{}
+#[derive(Debug, Clone, Default)]
+pub struct Image {
+    #[allow(dead_code)]
+    //image: Box<[u8]>,
+    image: Box<[u8]>,
+    #[allow(dead_code)]
+    nx: u32,
+    #[allow(dead_code)]
+    ny: u32,
+    #[allow(dead_code)]
+    comp: u32,
+}
+
+#[allow(dead_code)]
+impl Image {
+    pub fn new(path: & dyn ToString) -> Self {
+            get_image_from_file(path)
+    }
+
+    pub fn get(&self, x: u32, y: u32) -> Result<Color, &'static str> {
+        if x >= self.nx || y >= self.ny {
+            return Err("Coordinates do no fit into image");
+        }
+        // y axis is flipped so, self.ny - y = y
+        // NOTE: ny is the size, so it'll be 1 larger 
+        let y = self.ny - y - 1;
+        let index = ((x + (y * self.nx)) * self.comp) as usize;
+
+        // data stored in self.image is from stb_image_rust, and is stored
+        // rgb and perhaps rgba, you can check the components count to determine
+        // how many channels there are (components like component out on tv)
+        // NOTE: The rgb values are 0-255 u8, and our colors are floats
+        // from 0.0 to 1.0, so we'll divide by 255.0 to turn into a "percentage"
+        // of our value.
+        // NOTE: Documentation differs from implementation in the stb_load_from_memory.
+        // In particular, when you call with the rgba, it doesn't 1) fail if there aren't
+        // as many channels as requested (4, rgb+a (unless a isn't considered a component)), 2)
+        // return the number of components in the image (returns 3, not 4).
+        // What it DOES do, is returns 3 for rgb, and include a 4th alpha channel in
+        // every cell. So, the stride is always 4, not 3. The only way to know this
+        // is that you passed the rgba flag into the method, and that in essence
+        // asks to have an alpha channel regardless.
+        // So, not sure what do do here. Do we hardcode to 4, or do we take the returned
+        // number of components and add +1 to it?
+        Ok(vect!(
+                self.image[index] as f64 / 255.,
+                self.image[index+1] as f64 / 255.,
+                self.image[index+2] as f64 / 255.))
+    }
+
+    // takes a percentage of the x, and a percentage of the y coordinates.
+    // It's going to expect that the values will be 0 <= val < 100
+    //
+    pub fn get_uv(&self, u: f32, v: f32) -> Result<Color, &'static str> {
+        if u < 0.0 || u >= 1.0
+            || v < 0.0 || v >= 1.0 {
+                return Err("Coordinates are out of bounds of a percentage.");
+            }
+        // get what x and y their percentages ==
+        let x = (self.nx as f32 * u) as u32;
+        // the (1. - v) inverts the axis so it matches our render screen
+        let y = (self.ny as f32 * (1.-v) - 0.001) as u32;
+
+        self.get(x, y)
+    }
+}
+
+pub fn get_image_from_file(path: & dyn ToString) -> Image {
+    let mut f = File::open(path.to_string()).expect("file not found");
+    let mut contents = vec![];
+    f.read_to_end(&mut contents).expect("Error reading file");
+
+    // load the image
+    let mut x: i32 = 0;
+    let mut y: i32 = 0;
+    let mut comp: i32 = 0;
+    let img: *mut u8;
+
+    unsafe {
+        img = stb_image_rust::stbi_load_from_memory(
+            contents.as_mut_ptr(),
+            contents.len() as i32,
+            &mut x,
+            &mut y,
+            &mut comp,
+            stb_image_rust::STBI_rgb_alpha,
+            );
+        eprintln!("img.x: {} img.y: {} img.comp: {} contents.len(): {}",
+                   &x, &y, &comp, &contents.len());
+        comp += 1;
+        eprintln!("For STBI_rgb_alpha, adding +1 to number of components. Now: {}",
+                   &comp);
+        let alloced_len: usize = (x * y * comp) as usize;
+        eprintln!("alloc estimated len: {}", &alloced_len);
+        eprintln!("print everything");
+        for i in (0..((x*y) as usize) * comp as usize).step_by(comp as usize * 6) {
+            for j in 0..6 {
+                eprint!("{} {} {}  ", &*img.add(i+(j*comp as usize)),
+                                    &*img.add(i+(j*comp as usize)+1),
+                                    &*img.add(i+(j*comp as usize)+2));
+            }
+            eprintln!("");
+        }
+        let retval = Vec::from_raw_parts_in(img,
+                                            alloced_len,
+                                            alloced_len,
+                                            std::alloc::Global);
+        eprintln!("print first 10 cells in vec");
+        for i in (0..(10*comp as usize)).step_by(comp as usize) {
+            eprintln!("{} {} {}", &retval[i], &retval[i+1], &retval[i+2]);
+        }
+        Image {
+            image: retval.into_boxed_slice(),
+            nx: x as u32,
+            ny: y as u32,
+            comp: comp as u32,
+
+        }
+    }
+}
+
+
 #[cfg(test)]
 mod test {
     use super::super::{color_to_texture, ray, wrap_material};
@@ -301,6 +626,8 @@ mod test {
     use crate::sphere::Sphere;
     #[allow(unused_imports)]
     use crate::vec3::{Color, Vec3};
+    use std::path::PathBuf;
+
     #[test]
     fn test_color() {
         let v = Vec3::new(0.0, 0.0, 0.0);
@@ -339,6 +666,10 @@ mod test {
     use crate::sphere;
     #[allow(unused_imports)]
     use crate::vec3::Point3;
+    use super::vect;
+    use crate::util::{self, Image};
+    use std::env;
+
     #[test]
     fn test_hitlist() {
         let _ans = true;
@@ -352,19 +683,22 @@ mod test {
         let metal = wrap_material!(Metal, color_to_texture!(&Color::new(1.0, 1.0, 1.0)), 1.0);
         let metal2 = metal.clone();
         let s = Hitters::Sphere(Sphere::new(&center, radius, metal));
-        let hitrec = Some(HitRecord {
-            t: 0.26794919243112264,
-            p: Vec3 {
+        let pat = Vec3 {
                 x: 0.26794919243112264,
                 y: 0.26794919243112264,
                 z: 0.26794919243112264,
-            },
+        };
+
+        let hitrec = Some(HitRecord {
+            t: 0.26794919243112264,
+            p: pat,
             normal: Vec3 {
                 x: -0.5773502691896258,
                 y: -0.5773502691896258,
                 z: -0.5773502691896258,
             },
             front_face: false,
+            texture_coord: Some(util::uv_for_sphere(&pat)),
             material: metal2,
         });
 
@@ -386,5 +720,79 @@ mod test {
         let ans = Vec3::new(-22.0, -13.0, -19.0);
 
         assert_eq!(crate::util::reflect(&v1, &v2), ans);
+    }
+
+    #[test]
+    #[ignore]
+    fn test_image_creation() {
+        let root_dir = &env::var("CARGO_MANIFEST_DIR").expect("$CARGO_MANIFEST_DIR");
+        let mut source_path = PathBuf::from(root_dir);
+        source_path.push("../results");
+        source_path.push("how_about_a_nice_cup_of_shut_up.jpg");
+        let img = Image::new(&String::from(source_path.to_str().unwrap()));
+
+        let t0 = img.get(2, 1);
+        eprintln!("t0: {:?}", &t0);
+
+        let c0 = img.get(97, 143);
+        let ans0 = vect!(181.0/255., 132.0/255., 29.0/255.);
+
+        let c1 = img.get(81, 148);
+        let ans1 = vect!(181./255., 129./255., 43./255.);
+
+        let c2 = img.get(102, 125);
+        let ans2 = vect!(252./255., 231./255., 212./255.);
+
+        let c3 = img.get(115, 164);
+        let ans3 = vect!(181./255., 131./255., 44./255.);
+
+        let c4 = img.get(0, 0);
+        let ans4 = vect!(255./255., 255./255., 253./255.);
+
+        assert_eq!(c4.ok(), Some(ans4));
+        assert_eq!(c3.ok(), Some(ans3));
+        assert_eq!(c0.ok(), Some(ans0));
+        assert_eq!(c1.ok(), Some(ans1));
+        assert_eq!(c2.ok(), Some(ans2));
+
+    }
+
+    #[test]
+    fn test_image_load() {
+        let root_dir = &env::var("CARGO_MANIFEST_DIR").expect("$CARGO_MANIFEST_DIR");
+        let mut source_path = PathBuf::from(root_dir);
+        source_path.push("../results");
+        source_path.push("test_image.bmp");
+        let img = Image::new(&String::from(source_path.to_str().unwrap()));
+
+        let c0 = img.get(0, 0);
+        let ans0 = vect!(0./255., 0./255., 0./255.);
+        let c1_0 = img.get(1, 0);
+        let ans1_0 = vect!(1./255., 0./255., 0./255.);
+        let c2_0 = img.get(2, 0);
+        let ans2_0 = vect!(2./255., 0./255., (2_u32*0_u32).div_floor(255) as f64/255.);
+        let o0 = img.get(0, 254);
+        let oans0 = vect!(0./255., 254./255., 0./255.);
+
+        let c1 = img.get(0, 1);
+        let ans1 = vect!(0./255., 1./255., 0./255.);
+
+        let c2 = img.get(1, 2);
+        let ans2 = vect!(1./255., 2./255., 0.);
+
+        let c3 = img.get(115, 164);
+        let ans3 = vect!(115./255., 164./255., (115_u32*164_u32).div_floor(255) as f64/255.);
+
+        let c4 = img.get(254, 254);
+        let ans4 = vect!(254./255., 254./255., (254_u32*254_u32).div_floor(255) as f64/255.);
+        assert_eq!(c0.ok(), Some(ans0));
+        assert_eq!(c1_0.ok(), Some(ans1_0));
+        assert_eq!(c2_0.ok(), Some(ans2_0));
+        assert_eq!(o0.ok(), Some(oans0));
+        assert_eq!(c1.ok(), Some(ans1));
+        assert_eq!(c2.ok(), Some(ans2));
+        assert_eq!(c3.ok(), Some(ans3));
+        assert_eq!(c4.ok(), Some(ans4));
+
     }
 }

@@ -1,5 +1,8 @@
 #![feature(generic_associated_types)]
 #![feature(float_minimum_maximum)]
+#![feature(allocator_api, slice_ptr_get)]
+#![feature(box_into_boxed_slice)]
+#![feature(int_roundings)]
 pub mod aabb;
 pub mod bvh;
 pub mod camera;

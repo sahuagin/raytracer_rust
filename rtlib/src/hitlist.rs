@@ -1,5 +1,5 @@
 #[allow(unused_imports)]
-use super::hittable::{HitRecord, Hittable, Hitters};
+use super::hittable::{HitRecord, Hittable, Hitters, TextureCoord};
 use super::ray::Ray;
 use crate::prelude;
 use prelude::BoundingBox;

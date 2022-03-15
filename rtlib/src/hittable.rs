@@ -14,7 +14,6 @@ pub trait Hittable {
     fn box_clone<'a>(&self) -> Box<dyn Hittable>;
 
     fn bounding_box(&self, t0: f64, t1: f64) -> Option<BoundingBox>;
-
 }
 
 impl Hittable for Hitters {
@@ -43,7 +42,9 @@ impl Hittable for Hitters {
             Hitters::Nothing(_x) => None,
         }
     }
+
 }
+
 
 #[derive(Clone, Copy, Default)]
 pub struct NoBatter;
@@ -74,12 +75,17 @@ pub enum Hitters {
 }
 
 #[allow(unused_imports, dead_code)]
+#[derive(Clone, Copy, Debug, Default)]
+pub struct TextureCoord {pub u: f64, pub v: f64}
+
+#[allow(unused_imports, dead_code)]
 #[derive(Clone)]
 pub struct HitRecord {
     pub t: f64,
     pub p: Vec3,
     pub normal: Vec3,
     pub material: MaterialType,
+    pub texture_coord: Option<TextureCoord>,
     pub front_face: bool,
 }
 
@@ -91,6 +97,7 @@ impl HitRecord {
             normal: p,
             material,
             t,
+            texture_coord: Some(TextureCoord{u: f64::default(), v: f64::default()}),
             front_face: false,
         }
     }
