@@ -1,4 +1,4 @@
-use super::hittable::HitRecord;
+use super::hittable::{HitRecord, TextureCoord};
 use super::ray::Ray;
 use super::textures::{ConstantTexture, NoneTexture, Texture, TextureType};
 use super::util::{random_in_unit_sphere, reflect, refract};
@@ -141,7 +141,13 @@ impl Material for Lambertian {
     fn scatter(&self, _ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
         let target = rec.p + rec.normal + random_in_unit_sphere();
         let scattered = Ray::new(&rec.p, &(target - &rec.p), None);
-        let attenuation = self.albedo.value(0.0, 0.0, &rec.p);
+        //let attenuation = self.albedo.value(0.0, 0.0, &rec.p);
+        let u: f64 = rec.texture_coord.unwrap_or(TextureCoord::default()).u;
+        let v: f64 = rec.texture_coord.unwrap_or(TextureCoord::default()).v;
+        let attenuation = self.albedo.value(
+            u,
+            v,
+            &rec.p);
         return Some((attenuation, scattered));
     }
 

@@ -1,5 +1,5 @@
 use super::aabb::{AabbF, AABB};
-use super::hittable::{HitRecord, Hittable, TextureCoord};
+use super::hittable::{HitRecord, Hittable};
 use super::materials::MaterialType;
 use super::ray::Ray;
 use super::util::{ffmax, ffmin, uv_for_sphere};
@@ -45,7 +45,13 @@ impl Hittable for Sphere {
                     normal: (pat - self.center) / self.radius,
                     front_face: false,
                     material: self.material.clone(),
-                    texture_coord: Some(TextureCoord::default()),
+                    // the u,v coord computation assumes that it has
+                    // a unit sphere centered on the origin. So, we'll
+                    // do that. Note, it's the same as the "normal"
+                    // above.
+                    texture_coord: Some(uv_for_sphere(
+                            &((pat - self.center) / self.radius))
+                        ),
                 });
                 return rec;
             }
@@ -58,7 +64,12 @@ impl Hittable for Sphere {
                     normal: (pat - self.center) / self.radius,
                     front_face: false,
                     material: self.material.clone(),
-                    texture_coord: Some(uv_for_sphere(&pat)),
+                    // the u,v coord computation assumes that it has
+                    // a unit sphere centered on the origin. So, we'll
+                    // do that.
+                    texture_coord: Some(uv_for_sphere(
+                            &((pat - self.center) / self.radius))
+                        ),
                 });
                 return rec;
             }

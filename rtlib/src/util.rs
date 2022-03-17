@@ -1,15 +1,14 @@
-use std::alloc::{self, Global};
-use std::mem;
+use std::{env, path::PathBuf};
 use libm;
 use std::fs::File;
 use std::io::prelude::*;
-//use stb_image_rust::stbi_load_from_memory;
-//#[allow(unused_attributes)]
-//#[macro_use]
 use super::materials::{Dielectric, Lambertian, Material, MaterialType, Metal};
+#[allow(unused_imports)]
 use super::textures::{
     ConstantTexture,
     CheckerTexture,
+    MappedTexture,
+    MappedTextureBuilder,
     NoiseTexture,
     TextureType};
 use super::ray::Ray;
@@ -20,6 +19,7 @@ use crate::hittable::Hittable;
 use rand::Rng;
 #[allow(unused_imports)]
 use std::io::{self, Write};
+use std::sync::Arc;
 use super::hitlist::HitList;
 #[allow(unused_imports)]
 use super::hittable::{Hitters, TextureCoord};
@@ -254,6 +254,35 @@ pub fn color(ray: &Ray, world: & dyn Hittable, depth: i32) -> Color {
     // return the overall result
     return accum_attenuation * last_color;
 }
+
+#[allow(unused_imports, dead_code)]
+pub fn color_just_attenuation(ray: &Ray, world: & dyn Hittable, _depth: i32) -> Color {
+    // the 0.001 ignores hits very close to 0, which handles issues with
+    // floating point approximation, which generates "shadow acne"
+    let last_color: Color;
+    // since this will reduce the color by a percent, we'll default to (1,1,1)
+    loop {
+        // does the ray we currently have 
+        if let Some(hit_record) = world.hit(&ray, 0.001, f64::INFINITY) {
+            // attenuation IS the color returned
+            if let Some((attenuation, _)) = hit_record.material.scatter(&ray, &hit_record) {
+                return attenuation;
+            } else {
+                last_color = Color::new(0.0, 0.0, 0.0);
+                return last_color;
+            }
+        } else {
+            // this iteration didn't hit anything, that also mean that there won't
+            // be any reflections
+            let unit_direction = unit_vector(&ray.direction());
+            let t = 0.5 * (unit_direction.y + 1.0);
+            last_color = (1.0 - t) * Color::new(1.0, 1.0, 1.0)
+                + t * Color::new(0.5, 0.7, 1.0);
+            return last_color;
+        }
+    }
+}
+
 
 #[allow(unused_imports, dead_code)]
 pub fn write_color(
@@ -495,17 +524,17 @@ pub fn ffmax<T: float::Float + std::cmp::PartialOrd>(a: T, b: T) -> T {
 
 // should be read only
 unsafe impl Sync for Image{}
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone)]
 pub struct Image {
     #[allow(dead_code)]
-    //image: Box<[u8]>,
-    image: Box<[u8]>,
+    //pub image: Box<[u8]>,
+    pub image: Arc<[u8]>,
     #[allow(dead_code)]
-    nx: u32,
+    pub nx: u32,
     #[allow(dead_code)]
-    ny: u32,
+    pub ny: u32,
     #[allow(dead_code)]
-    comp: u32,
+    pub comp: u32,
 }
 
 #[allow(dead_code)]
@@ -582,38 +611,50 @@ pub fn get_image_from_file(path: & dyn ToString) -> Image {
             &mut comp,
             stb_image_rust::STBI_rgb_alpha,
             );
-        eprintln!("img.x: {} img.y: {} img.comp: {} contents.len(): {}",
-                   &x, &y, &comp, &contents.len());
+        // add the alpha channel
         comp += 1;
-        eprintln!("For STBI_rgb_alpha, adding +1 to number of components. Now: {}",
-                   &comp);
         let alloced_len: usize = (x * y * comp) as usize;
-        eprintln!("alloc estimated len: {}", &alloced_len);
-        eprintln!("print everything");
-        for i in (0..((x*y) as usize) * comp as usize).step_by(comp as usize * 6) {
-            for j in 0..6 {
-                eprint!("{} {} {}  ", &*img.add(i+(j*comp as usize)),
-                                    &*img.add(i+(j*comp as usize)+1),
-                                    &*img.add(i+(j*comp as usize)+2));
-            }
-            eprintln!("");
+        let mut retval: Vec<u8> = Vec::with_capacity(alloced_len);
+        for i in 0..alloced_len {
+            retval.push(*img.add(i));
         }
-        let retval = Vec::from_raw_parts_in(img,
-                                            alloced_len,
-                                            alloced_len,
-                                            std::alloc::Global);
-        eprintln!("print first 10 cells in vec");
-        for i in (0..(10*comp as usize)).step_by(comp as usize) {
-            eprintln!("{} {} {}", &retval[i], &retval[i+1], &retval[i+2]);
-        }
+        stb_image_rust::c_runtime::free(img);
+
         Image {
-            image: retval.into_boxed_slice(),
+            image: Arc::from(retval.into_boxed_slice()),
             nx: x as u32,
             ny: y as u32,
             comp: comp as u32,
 
         }
     }
+}
+
+#[allow(unused_imports, dead_code)]
+pub fn earth_scene() -> HitList {
+    let root_dir = &env::var("CARGO_MANIFEST_DIR").expect("$CARGO_MANIFEST_DIR");
+    let mut source_path = PathBuf::from(root_dir);
+    source_path.push("../results");
+    source_path.push("Equirectangular_projection_SW.jpg");
+
+    let pertext = TextureType::MappedTexture(
+                MappedTextureBuilder::<No>::default().with_file(&String::from(source_path.to_str().unwrap())).build()
+            );
+    let mut hl: HitList = HitList::new();
+    // make a smaller version of above to see if it's actually rendering
+    hl.add(Hitters::Sphere(Sphere::new(
+                &vect!(-20, 2, -2),
+                10.0,
+                MaterialType::Lambertian(Lambertian::new(&pertext)))
+                ));
+    hl.add(Hitters::Sphere(Sphere::new(
+                &vect!(0, 2, 0),
+                2.,
+                MaterialType::Lambertian(Lambertian::new(&pertext)))));
+
+    hl
+
+
 }
 
 
@@ -730,9 +771,6 @@ mod test {
         source_path.push("../results");
         source_path.push("how_about_a_nice_cup_of_shut_up.jpg");
         let img = Image::new(&String::from(source_path.to_str().unwrap()));
-
-        let t0 = img.get(2, 1);
-        eprintln!("t0: {:?}", &t0);
 
         let c0 = img.get(97, 143);
         let ans0 = vect!(181.0/255., 132.0/255., 29.0/255.);

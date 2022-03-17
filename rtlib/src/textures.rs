@@ -145,15 +145,11 @@ impl CheckerTexture {
 
 impl Texture for CheckerTexture {
     fn value(&self, u: f64, v: f64, p: &Vec3) -> Color {
-        //eprintln!("CheckerTexture.value({}, {}, {})", u, v, p);
         let mult = 10.0;
         let sines = (mult * p.x).sin() * (mult*p.y).sin() * (mult*p.z).sin();
-        //eprintln!("    CheckerTexture.sines = {}", &sines);
         if sines < 0. {
-            //eprintln!("      less than 0. returning {})", self.odd.value(u, v, p));
             return self.odd.value(u, v, p);
         } else {
-            //eprintln!("      greater than or equal to 0. returning {} )", self.even.value(u, v, p));
             return self.even.value(u, v, p);
         }
     }
@@ -224,6 +220,7 @@ impl Texture for NoiseTexture {
 #[derive(Clone, Debug)]
 pub struct MappedTexture {
     pub image: Image,
+    pub filename: String,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -252,21 +249,28 @@ where
 impl MappedTextureBuilder<util::Yes> {
     pub fn build(self) -> MappedTexture {
         MappedTexture {
-            image: Image::new(&self.filename)
+            image: Image::new(&self.filename),
+            filename: self.filename,
         }
     }
 }
 
 
 impl Texture for MappedTexture {
-    fn value(&self, u:f64, v: f64, p: &Vec3) -> Color {
-        return Color::default();
-        unimplemented!("To do!");
+    fn value(&self, u:f64, v: f64, _p: &Vec3) -> Color {
+        let r = self.image.get_uv(u as f32, v as f32);
+        match r {
+            Err(_) => { vect!(0, 0, 0) },
+            Ok(x) => x,
+        }
     }
 
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        unimplemented!("output information about the image");
-        write!(f, "This should output the name of the file used. Perhaps the x, y coord and number of components.")
+        write!(f, "MappedTexture: nx: {} ny: {} comp: {} using: {}",
+               self.image.nx,
+               self.image.ny,
+               self.image.comp,
+               self.filename)
     }
 
     fn albedo(&self) -> TextureType {
@@ -319,7 +323,7 @@ mod test {
 
     #[test]
     fn test_checker_texture() {
-       let checker = TextureType::CheckerTexture(CheckerTexture::new(
+       let _checker = TextureType::CheckerTexture(CheckerTexture::new(
         TextureType::ConstantTexture(
             ConstantTexture::new(&vect!(0.2, 0.3, 0.1))
             ),

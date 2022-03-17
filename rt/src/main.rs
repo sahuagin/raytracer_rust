@@ -21,7 +21,16 @@ use rtlib::materials::{Dielectric, Lambertian, Metal};
 #[allow(unused_imports)]
 use rtlib::sphere::Sphere;
 #[allow(unused_imports)]
-use rtlib::util::{color, Image, random_scene, two_perlin_spheres, two_spheres, write_color};
+use rtlib::util::{
+    color,
+    color_just_attenuation,
+    earth_scene,
+    Image,
+    random_scene,
+    two_perlin_spheres,
+    two_spheres,
+    write_color,
+};
 use rtlib::vec3::Color;
 use rtlib::bvh::Bvh;
 use rtlib::hitlist::HitList;
@@ -111,6 +120,10 @@ fn main() {
         subcommand(
             Command::new("two_perlin_spheres")
             .about("Display 2 spheres with Perlin noise.")
+            ).
+        subcommand(
+            Command::new("earth_scene")
+            .about("Display a picture of Earth projected on a sphere.")
             );
 
     let matches = cmd.get_matches();
@@ -255,7 +268,25 @@ fn main() {
             world = Arc::new(two_perlin_spheres());
             matches
 
-        }
+        },
+        Some(("earth_scene", matches)) => {
+            look_from = vect!(13, 2, 3);
+            look_at = vect!(0, 0, 0);
+            dist_to_focus = 10.0;
+            APERTURE = 0.0;
+            camera = Camera::new(
+                look_from,
+                look_at,
+                vect!(0,1,0),
+                20.,
+                ASPECT_RATIO,
+                APERTURE,
+                dist_to_focus,
+                0.0,
+                1.0);
+            world = Arc::new(earth_scene());
+            matches
+        },
         _ => unreachable!("clap should ensure we don't get here"),
     };
     //eprintln!("first get_matches {:?}", matches);

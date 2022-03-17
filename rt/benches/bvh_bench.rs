@@ -66,7 +66,7 @@ fn bench_random_scene_bvh() {
     // Chapter 12, what next?
     let start_time_in_sec:f64 = 0.0;
     let stop_time_in_sec:f64 = 0.0;
-    let mut world = Arc::new(random_scene(&mut rng));
+    let mut world = Arc::new(random_scene(&mut rng, false));
     let mut bvh = Bvh::new();
     bvh.add_hitlist(& mut world, start_time_in_sec, stop_time_in_sec);
     let world = Arc::new(bvh.build());
@@ -189,7 +189,7 @@ fn bench_random_scene_no_bvh() {
     // Chapter 12, what next?
     let start_time_in_sec:f64 = 0.0;
     let stop_time_in_sec:f64 = 0.0;
-    let world = Arc::new(random_scene(&mut rng));
+    let world = Arc::new(random_scene(&mut rng, false));
 
     let camera = Camera::new(
         look_from,
