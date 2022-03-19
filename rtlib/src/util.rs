@@ -777,7 +777,7 @@ mod test {
             3.0,
             metal,
         )));
-        let c = crate::util::color(&r, &world, 100);
+        let c = crate::util::color(&r, &world, 100, &Color::new(1.0, 1.0, 1.0));
         // so, now that the world has a depth, and there are random bounces for refraction,
         // this becomes a whole lot more difficult to test. Even giving it perfect reflection
         // surface (metal, all white, no fuzz) it'll return some random bounces.
