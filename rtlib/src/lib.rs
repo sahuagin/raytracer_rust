@@ -16,6 +16,7 @@ pub mod textures;
 pub mod util;
 pub mod vec3;
 pub mod perlin;
+pub mod rectangle;
 
 pub mod prelude {
     pub use super::aabb::*;
@@ -26,6 +27,7 @@ pub mod prelude {
     pub use super::materials::*;
     pub use super::perlin::*;
     pub use super::ray::*;
+    pub use super::rectangle::*;
     pub use super::sphere::*;
     pub use super::textures::*;
     pub use super::util::*;

@@ -27,6 +27,7 @@ use rtlib::util::{
     earth_scene,
     Image,
     random_scene,
+    simple_light_scene,
     two_perlin_spheres,
     two_spheres,
     write_color,
@@ -49,6 +50,7 @@ fn main() {
         start: f32,
         stop: f32,
         texture: Option<Image>,
+        interior_light: Color,
     }
 
     let mut ri = RenderInfo {
@@ -61,6 +63,8 @@ fn main() {
         start: 0.0,
         stop: 0.0,
         texture: None,
+        // use interior lighthing by default
+        interior_light: Color::new(1.0, 1.0, 1.0),
     };
 
     let cmd = clap::Command::new("rt")
@@ -106,6 +110,10 @@ fn main() {
                 clap::arg!(--globe_texture <FILE> "An image that should be used if a textured globe is to be displayed.")
                 .required(false)
                 .allow_invalid_utf8(true)
+            ).arg(
+                clap::arg!(--explicit_lighting <TRUEorFALSE> "If you scene explicitly uses lights, set this to true. If you want to see all objects without worrying about lighting, set to false.")
+                .required(false)
+                .default_value("false")
             )
         .subcommand_required(true)
         .subcommand(
@@ -124,6 +132,11 @@ fn main() {
         subcommand(
             Command::new("earth_scene")
             .about("Display a picture of Earth projected on a sphere.")
+            ).
+        subcommand(
+            Command::new("simple_light_scene")
+            .about("Using the two_perlin_spheres scene,
+                   add a sphere and a rectangle of light.")
             );
 
     let matches = cmd.get_matches();
@@ -145,6 +158,13 @@ fn main() {
         ri.texture = Some(Image::new(&config_path.display()));
     }
 
+    let el: bool = matches.value_of_t("explicit_lighting").expect("Lighting type required.");
+    if el == true {
+        // the scene will provide it's own light, so objects don't have to produce
+        // their own light
+        ri.interior_light = Color::new(0.0, 0.0, 0.0);
+    }
+
     if matches.is_present("fast") {
        ri = RenderInfo{
             fast: true,
@@ -156,6 +176,7 @@ fn main() {
             start: ri.start,
             stop: ri.stop,
             texture: ri.texture,
+            interior_light: ri.interior_light,
        }; 
     }
     // make read only
@@ -202,6 +223,7 @@ fn main() {
     let start_time_in_sec:f64 = 0.0;
     let stop_time_in_sec:f64 = 0.0;
     let vfov: f64 = ri.vfov as f64;
+    let mut interior_light = ri.interior_light;
     let mut camera = Camera::new(
         look_from,
         look_at,
@@ -287,12 +309,33 @@ fn main() {
             world = Arc::new(earth_scene());
             matches
         },
+        Some(("simple_light_scene", matches)) => {
+            // we need to change the camera as well as populate a different world
+            look_from = vect!(25, 2, 2);
+            look_at = vect!(0, 0, 0);
+            dist_to_focus = 10.0;
+            APERTURE = 0.0;
+            interior_light = Color::new(0.0, 0.0, 0.0);
+            camera = Camera::new(
+                look_from,
+                look_at,
+                vect!(0,1,0),
+                30.,
+                ASPECT_RATIO,
+                APERTURE,
+                dist_to_focus,
+                0.0,
+                1.0);
+            world = Arc::new(simple_light_scene());
+            matches
+        }
         _ => unreachable!("clap should ensure we don't get here"),
     };
     //eprintln!("first get_matches {:?}", matches);
     //eprintln!("the render data is {:?}", &ri);
 
     let camera = camera;
+    let interior_light = interior_light;
 
     let mut bvh = Bvh::new();
     bvh.add_hitlist(& mut world, start_time_in_sec, stop_time_in_sec);
@@ -319,7 +362,7 @@ fn main() {
                     let u = (i as f64 + rng.gen::<f64>()) / (IMAGE_WIDTH - 1) as f64;
                     let v = (j as f64 + rng.gen::<f64>()) / (IMAGE_HEIGHT - 1) as f64;
                     let r = camera.get_ray(u, v);
-                    pixel_color += color(&r, world.as_ref(), MAX_DEPTH);
+                    pixel_color += color(&r, world.as_ref(), MAX_DEPTH, &interior_light);
                 }
 
                 let n = n_finished.fetch_add(1, std::sync::atomic::Ordering::Relaxed);

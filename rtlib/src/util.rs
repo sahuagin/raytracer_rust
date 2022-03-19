@@ -2,7 +2,14 @@ use std::{env, path::PathBuf};
 use libm;
 use std::fs::File;
 use std::io::prelude::*;
-use super::materials::{Dielectric, Lambertian, Material, MaterialType, Metal};
+use super::materials::{
+    Dielectric,
+    DiffuseLight,
+    Lambertian,
+    Material,
+    MaterialType,
+    Metal
+};
 #[allow(unused_imports)]
 use super::textures::{
     ConstantTexture,
@@ -12,6 +19,7 @@ use super::textures::{
     NoiseTexture,
     TextureType};
 use super::ray::Ray;
+use super::rectangle::XYRect;
 use super::sphere::Sphere;
 #[allow(unused_imports)]
 use super::vec3::{self, dot, unit_vector, Color, Point3, Vec3};
@@ -212,10 +220,12 @@ impl ToAssign for No {}
 impl Assigned for Yes {}
 impl NotAssigned for No {}
 
-
-
 #[allow(unused_imports, dead_code)]
-pub fn color(ray: &Ray, world: & dyn Hittable, depth: i32) -> Color {
+pub fn color(
+    ray: &Ray,
+    world: & dyn Hittable,
+    depth: i32,
+    interior_light: &Color) -> Color {
     // the 0.001 ignores hits very close to 0, which handles issues with
     // floating point approximation, which generates "shadow acne"
 
@@ -234,8 +244,11 @@ pub fn color(ray: &Ray, world: & dyn Hittable, depth: i32) -> Color {
     // on THE stack.
     let mut emitts: Vec<Color> = Vec::with_capacity(depth as usize + 1);
     let mut attenuations: Vec<Color> = Vec::with_capacity(depth as usize + 1);
-    let start_color = vect!(1,1,1);
-    // since this will reduce the color by a percent, we'll default to (1,1,1)
+    //let start_color = vect!(1,1,1);
+    //let start_color = vect!(0,0,0);
+    let start_color = *interior_light;
+    // since this will reduce the color by a percent, we'll default to (1,1,1) for 
+    // interior lighting. For scenes with explicit lighting, (0,0,0) should be used.
     let mut tmpray = ray.clone();
     let mut depth = depth;
     loop {
@@ -282,6 +295,30 @@ pub fn color(ray: &Ray, world: & dyn Hittable, depth: i32) -> Color {
         color = (*a * color) + e;
     }
     color
+
+}
+
+
+// This is used for all of the initial images that we've done where you just see
+// the placed objects and their colors. Shadows are from the reflections and reduction
+// of color(subsequent colors/hits are multiplied to each other, this reduces the value
+// and makes things darker). You use this if you want to see the scene light fully.
+#[allow(unused_imports, dead_code)]
+pub fn color_use_interior_lighting(ray: &Ray, world: & dyn Hittable, depth: i32) -> Color {
+    let interior_light = Color::new(1.0, 1.0, 1.0);
+    color(&ray, world, depth, &interior_light)
+}
+
+// This is used when you've placed lights in the scene and want to have anything not lit
+// dark, or unable to be seen. You could also call the color function and pass
+// in the color/light directly.
+#[allow(unused_imports, dead_code)]
+pub fn color_use_explicit_lighting(
+    ray: &Ray,
+    world: & dyn Hittable,
+    depth: i32) -> Color {
+    let interior_light = Color::new(0.0, 0.0, 0.0);
+    color(&ray, world, depth, &interior_light)
 }
 
 #[allow(unused_imports, dead_code)]
@@ -686,6 +723,26 @@ pub fn earth_scene() -> HitList {
 
 }
 
+
+#[allow(unused_imports, dead_code)]
+pub fn simple_light_scene() -> HitList {
+   let mut hl = two_perlin_spheres();
+
+   hl.add(Hitters::Sphere(Sphere::new(
+           &vect!(0, 7, 0), 2.,
+           MaterialType::DiffuseLight(
+               DiffuseLight::new(
+                   TextureType::ConstantTexture(
+                       ConstantTexture::new(&vect!(4, 4, 4))))))));
+   hl.add(
+       Hitters::XYRect(XYRect::new(
+               3., 5., 1., 3., -2.,
+               &MaterialType::DiffuseLight(
+                   DiffuseLight::new(
+                       TextureType::ConstantTexture(
+                           ConstantTexture::new(&vect!(4.,4.,4.))))))));
+   hl
+}
 
 #[cfg(test)]
 mod test {

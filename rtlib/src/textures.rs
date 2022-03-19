@@ -150,6 +150,7 @@ impl Texture for CheckerTexture {
         if sines < 0. {
             return self.odd.value(u, v, p);
         } else {
+            //eprintln!("      greater than or equal to 0. returning {} )", self.even.value(u, v, p));
             return self.even.value(u, v, p);
         }
     }

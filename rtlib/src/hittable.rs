@@ -5,7 +5,9 @@ use super::hitlist::HitList;
 use super::materials::{Material, MaterialType};
 use super::ray::Ray;
 use super::sphere::{MovingSphere, Sphere};
+use super::rectangle::XYRect;
 use super::vec3::{Point3, Vec3};
+use std::{fmt, cmp::PartialEq};
 
 #[allow(unused_imports, dead_code)]
 pub trait Hittable {
@@ -24,6 +26,7 @@ impl Hittable for Hitters {
             Hitters::MovingSphere(x) => x.hit(r, t_min, t_max),
             Hitters::BoundingBox(x) => x.hit(r, t_min, t_max),
             Hitters::BVolumeHierarchy(x) | Hitters::BvhNode(x) => x.hit(r, t_min, t_max),
+            Hitters::XYRect(x) => x.hit(r, t_min, t_max),
             Hitters::Nothing(_x) => None,
         }
     }
@@ -39,6 +42,7 @@ impl Hittable for Hitters {
             Hitters::MovingSphere(x) => x.bounding_box(t0, t1),
             Hitters::BoundingBox(x) => x.bounding_box(t0, t1),
             Hitters::BVolumeHierarchy(x) | Hitters::BvhNode(x) => x.bounding_box(t0, t1),
+            Hitters::XYRect(x) => x.bounding_box(t0, t1),
             Hitters::Nothing(_x) => None,
         }
     }
@@ -71,6 +75,7 @@ pub enum Hitters {
     BoundingBox(BoundingBox),
     BVolumeHierarchy(Bvh),
     BvhNode(BvhNode),
+    XYRect(XYRect),
     Nothing(NoBatter),
 }
 
@@ -110,6 +115,38 @@ impl HitRecord {
             outward_normal *= -1.0;
             outward_normal
         };
+    }
+}
+
+impl fmt::Debug for HitRecord {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("HitRecord")
+            .field("t", &self.t)
+            .field("p", &self.p)
+            .field("normal", &self.normal)
+            .field("texture_coord", &self.texture_coord)
+            .field("front_face", &self.front_face)
+            .finish()
+
+    }
+}
+
+impl PartialEq for HitRecord
+{
+    fn eq(&self, other: &Self) -> bool {
+        if self.t == other.t &&
+           self.p == other.p &&
+           self.normal == other.normal &&
+           //self.material == other.material &&
+           self.texture_coord.unwrap_or_default().u ==
+                other.texture_coord.unwrap_or_default().u &&
+           self.texture_coord.unwrap_or_default().v ==
+                other.texture_coord.unwrap_or_default().v &&
+           self.front_face == other.front_face {
+                return true;
+           }
+        false
+
     }
 }
 
