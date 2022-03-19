@@ -6,53 +6,103 @@ use super::{
     vect,
 };
 
+#[derive(Clone, Copy)]
+pub enum Axis {
+    X,
+    Y,
+    Z,
+}
+
+impl Default for Axis {
+    fn default() -> Self {
+        Axis::X
+    }
+}
+
+// NOTE: for an XY Rectangle, you align on Z axis
+// for XZ Rectangle, you align on Y axis
+// for YZ Rectangle, you align on Z axis.
+// So, only 2 points are ever needed, and then the 'k'
+// plane/axis where it's aligned to.
 #[derive(Clone)]
-pub struct XYRect {
+pub struct Rect {
     material: MaterialType,
-    x0: f64,
-    x1: f64,
-    y0: f64,
-    y1: f64,
+    axis0_min: f64,
+    axis0_max: f64,
+    axis1_min: f64,
+    axis1_max: f64,
     k: f64,
+    aligned_axis: Axis,
 }
 
 
-impl Default for XYRect {
-    fn default() -> XYRect {
-        XYRect {
+impl Default for Rect {
+    fn default() -> Rect {
+        Rect {
             material: MaterialType::Nothing(NoneMaterial),
-            x0: f64::default(),
-            x1: f64::default(),
-            y0: f64::default(),
-            y1: f64::default(),
+            axis0_min: f64::default(),
+            axis0_max: f64::default(),
+            axis1_min: f64::default(),
+            axis1_max: f64::default(),
             k:  f64::default(),
+            aligned_axis: Axis::default(),
         }
     }
 }
 
-impl XYRect {
-    pub fn new(x0: f64, x1: f64, y0: f64, y1: f64, k: f64, mat: &MaterialType) -> Self {
-        XYRect {
+impl Rect {
+    pub fn new(
+        axis0_min: f64,
+        axis0_max: f64,
+        axis1_min: f64,
+        axis1_max: f64,
+        k: f64,
+        mat: &MaterialType,
+        aligned_axis: Axis) -> Self {
+
+        Rect {
             material: mat.clone(),
-            x0,
-            x1,
-            y0,
-            y1,
+            axis0_min,
+            axis0_max,
+            axis1_min,
+            axis1_max,
             k,
+            aligned_axis,
         }
     }
 }
 
-impl Hittable for XYRect {
+impl Hittable for Rect {
     fn hit(&self, r: &Ray, tmin: f64, tmax: f64) -> Option<HitRecord> {
-        let t: f64 = (self.k - r.origin().z) / r.direction().z;
-        if t < tmin || t > tmax {
-            return None;
+        let t: f64;
+        let axis0: f64;
+        let axis1: f64;
+        match self.aligned_axis {
+            // XY Rect
+            Axis::Z => {
+                t = (self.k - r.origin().z) / r.direction().z;
+                if t < tmin || t > tmax { return None; }
+                axis0 = r.origin().x + t * r.direction().x;
+                axis1 = r.origin().y + t * r.direction().y;
+            },
+            // XZ Rect
+            Axis::Y => {
+                t = (self.k - r.origin().y) / r.direction().y;
+                if t < tmin || t > tmax { return None; }
+                axis0 = r.origin().x + t * r.direction().x;
+                axis1 = r.origin().z + t * r.direction().z;
+            },
+            // YZ Rect
+            Axis::X => {
+                t = (self.k - r.origin().x) / r.direction().x;
+                if t < tmin || t > tmax { return None; }
+                axis0 = r.origin().y + t * r.direction().y;
+                axis1 = r.origin().z + t * r.direction().z;
+
+            },
         }
-        let x: f64 = r.origin().x + t * r.direction().x;
-        let y: f64 = r.origin().y + t * r.direction().y;
-        if (x < self.x0) || (x > self.x1) ||
-            (y < self.y0) || (y > self.y1) {
+        if (axis0 < self.axis0_min) || (axis0 > self.axis0_max) ||
+            (axis1 < self.axis1_min) || (axis1 > self.axis1_max) {
             return None;
         }
 
@@ -64,11 +114,15 @@ impl Hittable for XYRect {
 
         hitrec.texture_coord = 
             Some(TextureCoord{
-                u: (x - self.x0) / (self.x1 - self.x0),
-                v: (y - self.y0) / (self.y1 - self.y0),
+                u: (axis0 - self.axis0_min) / (self.axis0_max - self.axis0_min),
+                v: (axis1 - self.axis1_min) / (self.axis1_max - self.axis1_min),
             });
         // axis aligned rectangle.
-        hitrec.normal = vect!(0, 0, 1);
+        hitrec.normal = match self.aligned_axis {
+            Axis::Z => vect!(0, 0, 1),
+            Axis::Y => vect!(0, 1, 0),
+            Axis::X => vect!(1, 0, 0),
+        };
         Some(hitrec)
     }
 
@@ -77,11 +131,29 @@ impl Hittable for XYRect {
     }
 
     fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<BoundingBox> {
-        Some(BoundingBox::AabbF(
-            AabbF{
-                minimum: vect!(self.x0, self.y0, self.k - 0.0001),
-                maximum: vect!(self.x1, self.y1, self.k + 0.0001)}
-        ))
+        match self.aligned_axis {
+            Axis::Z => {
+                Some(BoundingBox::AabbF(
+                    AabbF{
+                        minimum: vect!(self.axis0_min, self.axis1_min, self.k - 0.0001),
+                        maximum: vect!(self.axis1_max, self.axis1_max, self.k + 0.0001)}
+                ))
+            },
+            Axis::Y => {
+                Some(BoundingBox::AabbF(
+                    AabbF{
+                        minimum: vect!(self.axis0_min, self.k - 0.0001, self.axis1_min),
+                        maximum: vect!(self.axis1_max, self.k + 0.0001, self.axis1_max)}
+                ))
+            },
+            Axis::X => {
+                Some(BoundingBox::AabbF(
+                    AabbF{
+                        minimum: vect!(self.k - 0.0001, self.axis0_min, self.axis1_min),
+                        maximum: vect!(self.k + 0.0001, self.axis1_max, self.axis1_max)}
+                ))
+            },
+        }
     }
 }
 
@@ -95,16 +167,20 @@ use crate::{
     textures::{ConstantTexture, TextureType},
     vect,
 };
-use super::XYRect;
+use super::{Axis, Rect};
 
     #[test]
     fn test_xyrect_creation() {
-        let xyrect = XYRect::new(
+        let xyrect = Rect::new(
             -1.0, 1.0, -1.0, 1.0, 0.0,
             &MaterialType::DiffuseLight(
                 DiffuseLight::new(
                     TextureType::ConstantTexture(
-                        ConstantTexture::new(&vect!(4,4,4))))));
+                        ConstantTexture::new(&vect!(4,4,4))
+                    )
+                )
+            ),
+        Axis::Z);
 
         let bb_ans = BoundingBox::AabbF(AabbF::new(
             vect!(-1, -1, 0.0-0.0001),
@@ -115,12 +191,16 @@ use super::XYRect;
 
     #[test]
     fn test_xyrect_hit() {
-        let xyrect = XYRect::new(
+        let xyrect = Rect::new(
             -1.0, 1.0, -1.0, 1.0, 0.0,
             &MaterialType::DiffuseLight(
                 DiffuseLight::new(
                     TextureType::ConstantTexture(
-                        ConstantTexture::new(&vect!(4,4,4))))));
+                        ConstantTexture::new(&vect!(4,4,4))
+                    )
+                )
+            ),
+        Axis::Z);
 
         let r = Ray::new(
             &vect!(0, 0, 1),
@@ -144,5 +224,118 @@ use super::XYRect;
         assert_eq!(hr, Some(hr_ans));
 
     }
+
+    #[test]
+    fn test_xzrect_creation() {
+        let xzrect = Rect::new(
+            -1.0, 1.0, -1.0, 1.0, 0.0,
+            &MaterialType::DiffuseLight(
+                DiffuseLight::new(
+                    TextureType::ConstantTexture(
+                        ConstantTexture::new(&vect!(4,4,4))
+                    )
+                )
+            ),
+        Axis::Y);
+
+        let bb_ans = BoundingBox::AabbF(AabbF::new(
+            vect!(-1, 0.0-0.0001, -1),
+            vect!(1, 0.0+0.0001, 1)));
+
+        assert_eq!(xzrect.bounding_box(0.0, 0.0), Some(bb_ans));
+    } 
+
+    #[test]
+    fn test_xzrect_hit() {
+        let xzrect = Rect::new(
+            -1.0, 1.0, -1.0, 1.0, 0.0,
+            &MaterialType::DiffuseLight(
+                DiffuseLight::new(
+                    TextureType::ConstantTexture(
+                        ConstantTexture::new(&vect!(4,4,4))
+                    )
+                )
+            ),
+        Axis::Y);
+
+        let r = Ray::new(
+            &vect!(0, 1, 0),
+            &vect!(0, -1, 0),
+            None
+            );
+
+        let mut hr_ans = HitRecord::new(
+            vect!(0, 0, 0),
+            1.0,
+            MaterialType::DiffuseLight(
+                DiffuseLight::new(
+                    TextureType::ConstantTexture(
+                        ConstantTexture::new(&vect!(4,4,4))))));
+        hr_ans.normal = vect!(0,1,0);
+        hr_ans.texture_coord = Some(TextureCoord{u: 0.5, v: 0.5});
+
+
+        let hr = xzrect.hit(&r, 0.0, 1.0);
+        
+        assert_eq!(hr, Some(hr_ans));
+
+    }
+
+    #[test]
+    fn test_yzrect_creation() {
+        let yzrect = Rect::new(
+            -1.0, 1.0, -1.0, 1.0, 0.0,
+            &MaterialType::DiffuseLight(
+                DiffuseLight::new(
+                    TextureType::ConstantTexture(
+                        ConstantTexture::new(&vect!(4,4,4))
+                    )
+                )
+            ),
+        Axis::X);
+
+        let bb_ans = BoundingBox::AabbF(AabbF::new(
+            vect!(0.0-0.0001, -1, -1),
+            vect!(0.0+0.0001, 1, 1)));
+
+        assert_eq!(yzrect.bounding_box(0.0, 0.0), Some(bb_ans));
+    } 
+
+    #[test]
+    fn test_yzrect_hit() {
+        let yzrect = Rect::new(
+            -1.0, 1.0, -1.0, 1.0, 0.0,
+            &MaterialType::DiffuseLight(
+                DiffuseLight::new(
+                    TextureType::ConstantTexture(
+                        ConstantTexture::new(&vect!(4,4,4))
+                    )
+                )
+            ),
+        Axis::X);
+
+        let r = Ray::new(
+            &vect!(1, 0, 0),
+            &vect!(-1, 0, 0),
+            None
+            );
+
+        let mut hr_ans = HitRecord::new(
+            vect!(0, 0, 0),
+            1.0,
+            MaterialType::DiffuseLight(
+                DiffuseLight::new(
+                    TextureType::ConstantTexture(
+                        ConstantTexture::new(&vect!(4,4,4))))));
+        hr_ans.normal = vect!(1,0,0);
+        hr_ans.texture_coord = Some(TextureCoord{u: 0.5, v: 0.5});
+
+
+        let hr = yzrect.hit(&r, 0.0, 1.0);
+        
+        assert_eq!(hr, Some(hr_ans));
+
+    }
+
 
 }

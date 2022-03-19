@@ -19,7 +19,7 @@ use super::textures::{
     NoiseTexture,
     TextureType};
 use super::ray::Ray;
-use super::rectangle::XYRect;
+use super::rectangle::{Axis, Rect};
 use super::sphere::Sphere;
 #[allow(unused_imports)]
 use super::vec3::{self, dot, unit_vector, Color, Point3, Vec3};
@@ -735,13 +735,42 @@ pub fn simple_light_scene() -> HitList {
                    TextureType::ConstantTexture(
                        ConstantTexture::new(&vect!(4, 4, 4))))))));
    hl.add(
-       Hitters::XYRect(XYRect::new(
+       Hitters::Rect(Rect::new(
                3., 5., 1., 3., -2.,
                &MaterialType::DiffuseLight(
                    DiffuseLight::new(
                        TextureType::ConstantTexture(
-                           ConstantTexture::new(&vect!(4.,4.,4.))))))));
+                           ConstantTexture::new(&vect!(4.,4.,4.))
+                           )
+                       )
+                   ),
+               Axis::Z)
+               )
+       );
    hl
+}
+
+#[allow(unused_imports, dead_code)]
+pub fn cornell_box() -> HitList {
+    let mut hl = HitList::default();
+    let red =  MaterialType::Lambertian(Lambertian::new(
+                &TextureType::ConstantTexture(ConstantTexture::new(
+                        &vect!(0.65, 0.05, 0.05)))));
+    let white = MaterialType::Lambertian(Lambertian::new(
+                &TextureType::ConstantTexture(ConstantTexture::new(
+                        &vect!(0.74, 0.73, 0.73)))));
+    let green = MaterialType::Lambertian(Lambertian::new(
+                &TextureType::ConstantTexture(ConstantTexture::new(
+                        &vect!(0.12, 0.45, 0.15)))));
+    let light = MaterialType::DiffuseLight(DiffuseLight::new(
+                TextureType::ConstantTexture(ConstantTexture::new(
+                        &vect!(15, 15, 15)))));
+    hl.add(Hitters::Rect(Rect::new(0., 555., 0., 555., 555., &green, Axis::X)));
+    hl.add(Hitters::Rect(Rect::new(0., 555., 0., 555., 0., &red, Axis::X)));
+    hl.add(Hitters::Rect(Rect::new(213., 343., 227., 332., 554., &light, Axis::Y)));
+    hl.add(Hitters::Rect(Rect::new(0., 555., 0., 555., 0., &white, Axis::Y)));
+    hl.add(Hitters::Rect(Rect::new(0., 555., 0., 555., 555., &white, Axis::Y)));
+    hl
 }
 
 #[cfg(test)]

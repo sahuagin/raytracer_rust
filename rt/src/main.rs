@@ -24,6 +24,7 @@ use rtlib::sphere::Sphere;
 use rtlib::util::{
     color,
     color_just_attenuation,
+    cornell_box,
     earth_scene,
     Image,
     random_scene,
@@ -137,6 +138,10 @@ fn main() {
             Command::new("simple_light_scene")
             .about("Using the two_perlin_spheres scene,
                    add a sphere and a rectangle of light.")
+            ).
+        subcommand(
+            Command::new("cornell_box")
+            .about("This is a replica of the original Cornell Box.")
             );
 
     let matches = cmd.get_matches();
@@ -328,7 +333,26 @@ fn main() {
                 1.0);
             world = Arc::new(simple_light_scene());
             matches
-        }
+        },
+        Some(("cornell_box", matches)) => {
+            look_from = vect!(278, 278, -800);
+            look_at = vect!(278, 278, 0);
+            dist_to_focus = 10.0;
+            APERTURE = 0.0;
+            interior_light = Color::new(0.0, 0.0, 0.0);
+            camera = Camera::new(
+                look_from,
+                look_at,
+                vect!(0,1,0),
+                40.,
+                ASPECT_RATIO,
+                APERTURE,
+                dist_to_focus,
+                0.0,
+                1.0);
+            world = Arc::new(cornell_box());
+            matches
+        },
         _ => unreachable!("clap should ensure we don't get here"),
     };
     //eprintln!("first get_matches {:?}", matches);

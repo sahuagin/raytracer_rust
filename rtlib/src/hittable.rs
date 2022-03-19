@@ -5,7 +5,7 @@ use super::hitlist::HitList;
 use super::materials::{Material, MaterialType};
 use super::ray::Ray;
 use super::sphere::{MovingSphere, Sphere};
-use super::rectangle::XYRect;
+use super::rectangle::Rect;
 use super::vec3::{Point3, Vec3};
 use std::{fmt, cmp::PartialEq};
 
@@ -26,7 +26,7 @@ impl Hittable for Hitters {
             Hitters::MovingSphere(x) => x.hit(r, t_min, t_max),
             Hitters::BoundingBox(x) => x.hit(r, t_min, t_max),
             Hitters::BVolumeHierarchy(x) | Hitters::BvhNode(x) => x.hit(r, t_min, t_max),
-            Hitters::XYRect(x) => x.hit(r, t_min, t_max),
+            Hitters::Rect(x) => x.hit(r, t_min, t_max),
             Hitters::Nothing(_x) => None,
         }
     }
@@ -42,7 +42,7 @@ impl Hittable for Hitters {
             Hitters::MovingSphere(x) => x.bounding_box(t0, t1),
             Hitters::BoundingBox(x) => x.bounding_box(t0, t1),
             Hitters::BVolumeHierarchy(x) | Hitters::BvhNode(x) => x.bounding_box(t0, t1),
-            Hitters::XYRect(x) => x.bounding_box(t0, t1),
+            Hitters::Rect(x) => x.bounding_box(t0, t1),
             Hitters::Nothing(_x) => None,
         }
     }
@@ -75,7 +75,7 @@ pub enum Hitters {
     BoundingBox(BoundingBox),
     BVolumeHierarchy(Bvh),
     BvhNode(BvhNode),
-    XYRect(XYRect),
+    Rect(Rect),
     Nothing(NoBatter),
 }
 
