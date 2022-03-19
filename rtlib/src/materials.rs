@@ -2,7 +2,8 @@ use super::hittable::{HitRecord, TextureCoord};
 use super::ray::Ray;
 use super::textures::{ConstantTexture, NoneTexture, Texture, TextureType};
 use super::util::{random_in_unit_sphere, reflect, refract};
-use super::vec3::{dot, unit_vector, Color};
+use super::vec3::{dot, unit_vector, Color, Vec3};
+use super::vect;
 use rand::Rng;
 
 pub trait Material {
@@ -10,6 +11,7 @@ pub trait Material {
     fn albedo(&self) -> TextureType;
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result;
     fn box_clone(&self) -> Box<MaterialType>;
+    fn emitted(&self, _u: f64, _v: f64, _p: &Vec3) -> Color { vect!(0,0,0) }// return black as default
 }
 
 #[derive(Clone)]
@@ -17,6 +19,7 @@ pub enum MaterialType {
     Lambertian(Lambertian),
     Dielectric(Dielectric),
     Metal(Metal),
+    DiffuseLight(DiffuseLight),
     Nothing(NoneMaterial),
 }
 
@@ -26,7 +29,7 @@ impl Default for MaterialType {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Default)]
 pub struct NoneMaterial;
 
 impl Material for NoneMaterial {
@@ -56,6 +59,9 @@ impl Material for MaterialType {
             MaterialType::Metal(innertype) => {
                 return innertype.scatter(ray_in, rec);
             }
+            MaterialType::DiffuseLight(innertype) => {
+                return innertype.scatter(ray_in, rec);
+            }
             MaterialType::Nothing(_innertype) => {
                 return None;
             }
@@ -66,6 +72,7 @@ impl Material for MaterialType {
             MaterialType::Lambertian(innertype) => return innertype.albedo(),
             MaterialType::Dielectric(innertype) => return innertype.albedo(),
             MaterialType::Metal(innertype) => return innertype.albedo(),
+            MaterialType::DiffuseLight(innertype) => return innertype.albedo(),
             MaterialType::Nothing(_innertype) => TextureType::Nothing(NoneTexture),
         }
     }
@@ -74,6 +81,7 @@ impl Material for MaterialType {
             MaterialType::Lambertian(innertype) => return innertype.inner_fmt(f),
             MaterialType::Dielectric(innertype) => return innertype.inner_fmt(f),
             MaterialType::Metal(innertype) => return innertype.inner_fmt(f),
+            MaterialType::DiffuseLight(innertype) => return innertype.inner_fmt(f),
             MaterialType::Nothing(innertype) => innertype.inner_fmt(f),
         }
     }
@@ -88,7 +96,20 @@ impl Material for MaterialType {
             MaterialType::Metal(innertype) => {
                 return Box::new(MaterialType::Metal(innertype.clone()));
             }
+            MaterialType::DiffuseLight(innertype) => {
+                return Box::new(MaterialType::DiffuseLight(innertype.clone()));
+            }
             MaterialType::Nothing(_innertype) => Box::new(MaterialType::Nothing(NoneMaterial)),
+        }
+    }
+
+    fn emitted(&self, u: f64, v: f64, p: &Vec3) -> Color {
+        match self {
+            MaterialType::Lambertian(innertype) => return innertype.emitted(u,v,p),
+            MaterialType::Dielectric(innertype) => return innertype.emitted(u,v,p),
+            MaterialType::Metal(innertype) => return innertype.emitted(u,v,p),
+            MaterialType::DiffuseLight(innertype) => return innertype.emitted(u,v,p),
+            MaterialType::Nothing(innertype) => innertype.emitted(u,v,p),
         }
     }
 }
@@ -286,8 +307,79 @@ impl Material for Dielectric {
 }
 //mat_display!(Metal);
 
+#[derive(Clone)]
+pub struct DiffuseLight {
+    albedo: TextureType,
+}
+
+impl DiffuseLight {
+    // NOTE: Default fuzz is 1
+    pub fn new(a: TextureType) -> Self {
+        DiffuseLight {
+            albedo: a,
+        }
+    }
+}
+
+impl Material for DiffuseLight {
+    fn scatter(&self, _ray_in: &Ray, _rec: &HitRecord) -> Option<(Color, Ray)> {
+        return None;
+    }
+
+    fn albedo(&self) -> TextureType {
+        self.albedo.clone()
+    }
+
+    #[allow(dead_code)]
+    fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "DiffuseLight: ")?;
+        return self.albedo().inner_fmt(f);
+    }
+    fn box_clone(&self) -> Box<MaterialType> {
+        Box::new(MaterialType::DiffuseLight(self.clone()))
+    }
+
+    fn emitted(&self, u: f64, v: f64, p: &Vec3) -> Color {
+        self.albedo.value(u, v, p)
+    }
+}
+mat_display!(DiffuseLight);
+
+
 pub fn schlick(cosine: f64, refractive_index: f64) -> f64 {
     let mut r0: f64 = (1.0 - refractive_index) / (1.0 + refractive_index);
     r0 = r0 * r0;
     return r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0);
+}
+
+#[cfg(test)]
+mod test {
+    #[allow(unused_imports)]
+    use super::{
+        Material,
+        NoneMaterial,
+        MaterialType,
+        DiffuseLight,
+        Color,
+    };
+    use super::super::{color_to_texture};
+    use crate::vect;
+
+
+    #[test]
+    fn test_base_material() {
+        let mat = MaterialType::Nothing(NoneMaterial::default());
+        let ans_color = vect!(0,0,0);
+
+        assert_eq!(mat.emitted(0., 0., &vect!(1,2,3)), ans_color);
+    }
+
+    #[test]
+    fn test_diffuse_light() {
+        let light_color = Color::new(1.0, 0.5, 0.2);
+        let light = DiffuseLight::new(color_to_texture!(&light_color));    
+        let result = light.emitted(0.0, 0.0, &light_color);
+
+        assert_eq!(result, light_color);
+    }
 }

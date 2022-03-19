@@ -3,6 +3,7 @@
 #![feature(allocator_api, slice_ptr_get)]
 #![feature(box_into_boxed_slice)]
 #![feature(int_roundings)]
+#![feature(let_chains)]
 pub mod aabb;
 pub mod bvh;
 pub mod camera;
