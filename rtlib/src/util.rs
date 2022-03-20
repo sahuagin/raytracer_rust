@@ -11,10 +11,10 @@ use super::materials::{
     Metal
 };
 #[allow(unused_imports)]
+use super::cube::Cube;
 use super::textures::{
     ConstantTexture,
     CheckerTexture,
-    MappedTexture,
     MappedTextureBuilder,
     NoiseTexture,
     TextureType};
@@ -24,7 +24,7 @@ use super::sphere::Sphere;
 #[allow(unused_imports)]
 use super::vec3::{self, dot, unit_vector, Color, Point3, Vec3};
 use super::{color_to_texture, vect, wrap_material};
-use crate::hittable::Hittable;
+use crate::hittable::{FlipNormal, Hittable};
 use rand::Rng;
 #[allow(unused_imports)]
 use std::io::{self, Write};
@@ -765,11 +765,20 @@ pub fn cornell_box() -> HitList {
     let light = MaterialType::DiffuseLight(DiffuseLight::new(
                 TextureType::ConstantTexture(ConstantTexture::new(
                         &vect!(15, 15, 15)))));
-    hl.add(Hitters::Rect(Rect::new(0., 555., 0., 555., 555., &green, Axis::X)));
+    hl.add(Hitters::FlipNormal(
+            FlipNormal::new(
+                &Rect::new(0., 555., 0., 555., 555., &green, Axis::X).box_clone())));
     hl.add(Hitters::Rect(Rect::new(0., 555., 0., 555., 0., &red, Axis::X)));
     hl.add(Hitters::Rect(Rect::new(213., 343., 227., 332., 554., &light, Axis::Y)));
+    hl.add(Hitters::FlipNormal(
+            FlipNormal::new(
+                &Rect::new(0., 555., 0., 555., 555., &white, Axis::Y).box_clone())));
     hl.add(Hitters::Rect(Rect::new(0., 555., 0., 555., 0., &white, Axis::Y)));
-    hl.add(Hitters::Rect(Rect::new(0., 555., 0., 555., 555., &white, Axis::Y)));
+    hl.add(Hitters::FlipNormal(
+            FlipNormal::new(
+                &Rect::new(0., 555., 0., 555., 555., &white, Axis::Z).box_clone())));
+    hl.add(Hitters::Cube(Cube::new(&vect!(130, 0, 65), &vect!(295, 165, 230), &white)));
+    hl.add(Hitters::Cube(Cube::new(&vect!(265, 0, 295), &vect!(430, 330, 460), &white)));
     hl
 }
 

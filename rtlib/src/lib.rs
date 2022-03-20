@@ -7,8 +7,10 @@
 pub mod aabb;
 pub mod bvh;
 pub mod camera;
+pub mod cube;
 pub mod hitlist;
 pub mod hittable;
+pub mod instances;
 pub mod materials;
 pub mod ray;
 pub mod sphere;
@@ -22,8 +24,10 @@ pub mod prelude {
     pub use super::aabb::*;
     pub use super::bvh::*;
     pub use super::camera::*;
+    pub use super::cube::*;
     pub use super::hitlist::*;
     pub use super::hittable::*;
+    pub use super::instances::*;
     pub use super::materials::*;
     pub use super::perlin::*;
     pub use super::ray::*;

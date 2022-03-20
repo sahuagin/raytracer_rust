@@ -1,5 +1,6 @@
 use super::aabb::BoundingBox;
 use super::bvh::{Bvh, BvhNode};
+use super::cube::Cube;
 use super::hitlist::HitList;
 #[allow(unused_imports)]
 use super::materials::{Material, MaterialType};
@@ -25,6 +26,8 @@ impl Hittable for Hitters {
             Hitters::Sphere(x) => x.hit(r, t_min, t_max),
             Hitters::MovingSphere(x) => x.hit(r, t_min, t_max),
             Hitters::BoundingBox(x) => x.hit(r, t_min, t_max),
+            Hitters::Cube(x) => x.hit(r, t_min, t_max),
+            Hitters::FlipNormal(x) => x.hit(r, t_min, t_max),
             Hitters::BVolumeHierarchy(x) | Hitters::BvhNode(x) => x.hit(r, t_min, t_max),
             Hitters::Rect(x) => x.hit(r, t_min, t_max),
             Hitters::Nothing(_x) => None,
@@ -41,7 +44,9 @@ impl Hittable for Hitters {
             Hitters::Sphere(x) => x.bounding_box(t0, t1),
             Hitters::MovingSphere(x) => x.bounding_box(t0, t1),
             Hitters::BoundingBox(x) => x.bounding_box(t0, t1),
+            Hitters::Cube(x) => x.bounding_box(t0, t1),
             Hitters::BVolumeHierarchy(x) | Hitters::BvhNode(x) => x.bounding_box(t0, t1),
+            Hitters::FlipNormal(x) => x.bounding_box(t0, t1),
             Hitters::Rect(x) => x.bounding_box(t0, t1),
             Hitters::Nothing(_x) => None,
         }
@@ -49,6 +54,35 @@ impl Hittable for Hitters {
 
 }
 
+
+// create a tuple struct. The hittable will be at self.0
+#[derive(Clone)]
+pub struct FlipNormal(Box<dyn Hittable>);
+
+impl FlipNormal {
+    pub fn new(hit: &Box<dyn Hittable>) -> Self {
+        FlipNormal(hit.box_clone())
+    }
+}
+
+impl Hittable for FlipNormal {
+    fn hit(&self, r: &Ray, tmin: f64, tmax: f64) -> Option<HitRecord> {
+        let hr = self.0.hit(r, tmin, tmax);
+        match hr {
+            Some(mut x) => { x.normal *= -1.0; Some(x) },
+            None => None,
+        }
+    }
+
+    fn box_clone<'a>(&self) -> Box<dyn Hittable> {
+        Box::new(self.clone())
+    }
+
+    fn bounding_box(&self, t0: f64, t1: f64) -> Option<BoundingBox> {
+        self.0.bounding_box(t0, t1)
+    }
+
+}
 
 #[derive(Clone, Copy, Default)]
 pub struct NoBatter;
@@ -75,6 +109,8 @@ pub enum Hitters {
     BoundingBox(BoundingBox),
     BVolumeHierarchy(Bvh),
     BvhNode(BvhNode),
+    Cube(Cube),
+    FlipNormal(FlipNormal),
     Rect(Rect),
     Nothing(NoBatter),
 }
@@ -165,5 +201,53 @@ impl std::fmt::Display for HitRecord {
         )?;
         self.material.inner_fmt(f)?;
         write!(f, ", t: {}, front_face: {}", self.t, self.front_face)
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use crate::ray::Ray;
+    use crate::vect;
+    use super::{FlipNormal, HitRecord, Hittable, TextureCoord};
+    use crate::materials::{MaterialType, DiffuseLight};
+    use crate::textures::{TextureType, ConstantTexture};
+    use crate::rectangle::{Axis, Rect};
+
+    #[test]
+    fn test_flip_normal_create() {
+        let yzrect = Rect::new(
+            -1.0, 1.0, -1.0, 1.0, 0.0,
+            &MaterialType::DiffuseLight(
+                DiffuseLight::new(
+                    TextureType::ConstantTexture(
+                        ConstantTexture::new(&vect!(4,4,4))
+                    )
+                )
+            ),
+        Axis::X);
+
+        let r = Ray::new(
+            &vect!(1, 0, 0),
+            &vect!(-1, 0, 0),
+            None
+            );
+
+        let mut hr_ans = HitRecord::new(
+            vect!(0, 0, 0),
+            1.0,
+            MaterialType::DiffuseLight(
+                DiffuseLight::new(
+                    TextureType::ConstantTexture(
+                        ConstantTexture::new(&vect!(4,4,4))))));
+        hr_ans.normal = vect!(1,0,0);
+        hr_ans.texture_coord = Some(TextureCoord{u: 0.5, v: 0.5});
+
+
+        let hr = yzrect.hit(&r, 0.0, 1.0);
+        
+        let flipnorm = FlipNormal::new(&yzrect.box_clone());
+        let flipped_hr = flipnorm.hit(&r, 0.0, 1.0);
+
+        assert_eq!(hr.unwrap().normal, flipped_hr.unwrap().normal * -1.);
     }
 }
