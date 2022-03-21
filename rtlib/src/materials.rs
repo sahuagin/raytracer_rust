@@ -29,6 +29,12 @@ impl Default for MaterialType {
     }
 }
 
+impl std::fmt::Display for MaterialType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.inner_fmt(f)
+    }
+}
+
 #[derive(Copy, Clone, Default)]
 pub struct NoneMaterial;
 

@@ -160,7 +160,7 @@ impl BoundingBox {
         }
     }
 
-    fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             BoundingBox::Aabb(x) => {
                 return write!(f, "Aabb::BoundingBox: min(): {} max(): {}", x.min(), x.max());
@@ -232,6 +232,10 @@ impl Hittable for BoundingBox {
             BoundingBox::Empty => None,
         }
     }
+
+    fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.inner_fmt(f)
+    }
 }
 
 #[derive(Default, Copy, Clone, Debug)]
@@ -258,6 +262,10 @@ impl Aabb {
             maximum: max,
         }
     }
+
+    pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Aabb: minimum: {} maximum: {}", &self.minimum, &self.maximum)
+    }
 }
 
 impl AabbF {
@@ -266,6 +274,10 @@ impl AabbF {
             minimum: min,
             maximum: max,
         }
+    }
+
+    pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "AabbF: minimum: {} maximum: {}", &self.minimum, &self.maximum)
     }
 }
 
@@ -284,6 +296,7 @@ impl AABB for AabbF {
     fn max(&self) -> Vec3 {
         self.maximum
     }
+
 }
 
 impl Hittable for Aabb {
@@ -325,6 +338,10 @@ impl Hittable for Aabb {
 
     fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<BoundingBox> {
         Some(BoundingBox::Aabb(self.clone()))
+    }
+
+    fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.inner_fmt(f)
     }
 }
 
@@ -368,6 +385,10 @@ impl Hittable for AabbF {
 
     fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<BoundingBox> {
         Some(BoundingBox::AabbF(self.clone()))
+    }
+
+    fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.inner_fmt(f)
     }
 }
 

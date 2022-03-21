@@ -32,6 +32,14 @@ impl<'a> HitList {
     pub fn add(&mut self, object: Hitters) {
         self.list.push(object)
     }
+
+    pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "HitList: \n")?;
+        for obj in &self.list {
+            write!(f, "{}\n", &obj)?;
+        }
+        write!(f, "   End HitList")
+    }
 }
 
 impl Hittable for HitList {
@@ -63,6 +71,10 @@ impl Hittable for HitList {
             temp_rec.replace(bigger.unwrap_or_default());
         }
         temp_rec
+    }
+
+    fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.inner_fmt(f)
     }
 }
 

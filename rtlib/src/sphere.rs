@@ -24,6 +24,11 @@ impl Sphere {
             material: material,
         }
     }
+
+    pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Sphere: center: {} radius: {}, material: {}",
+               &self.center, &self.radius, &self.material)
+    }
 }
 
 impl Hittable for Sphere {
@@ -87,6 +92,10 @@ impl Hittable for Sphere {
             self.center + vect!(self.radius, self.radius, self.radius),
         )))
     }
+
+    fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.inner_fmt(f)
+    }
 }
 
 
@@ -118,6 +127,19 @@ impl MovingSphere {
         self.center0
             + ((time - self.time0) / (self.time1 - self.time0)) * (self.center1 - self.center0)
     }
+
+    pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "MovingSphere: center0: {} center1: {} time0: {} time1: {} radius: {}, material: {}",
+            &self.center0,
+            &self.center1,
+            &self.time0,
+            &self.time1,
+            &self.radius,
+            &self.material)
+    }
+
 }
 
 impl Hittable for MovingSphere {
@@ -194,6 +216,10 @@ impl Hittable for MovingSphere {
         );
 
         Some(BoundingBox::AabbF(AabbF::new(small, big)))
+    }
+
+    fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.inner_fmt(f)
     }
 }
 

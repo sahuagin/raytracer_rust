@@ -6,7 +6,7 @@ use super::{
     vect,
 };
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Axis {
     X,
     Y,
@@ -16,6 +16,17 @@ pub enum Axis {
 impl Default for Axis {
     fn default() -> Self {
         Axis::X
+    }
+}
+
+impl std::fmt::Display for Axis {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let value: String = match &self {
+            Axis::X => "Axis::X".into(),
+            Axis::Y => "Axis::Y".into(),
+            Axis::Z => "Axis::Z".into(),
+        };
+        write!(f, "{}", value)
     }
 }
 
@@ -70,10 +81,34 @@ impl Rect {
             aligned_axis,
         }
     }
+
+    pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "Rect: axis0_min: {} axis0_max: {} axis1_min: {} axis1_max: {}",
+            &self.axis0_min,
+            &self.axis0_max,
+            &self.axis1_min,
+            &self.axis1_max)?;
+        write!(
+            f,
+            " k: {} , aligned_axis: {}, material: {}",
+            &self.k,
+            &self.aligned_axis,
+            &self.material)
+
+    }
+}
+
+impl std::fmt::Display for Rect {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.inner_fmt(f)
+    }
 }
 
 impl Hittable for Rect {
     fn hit(&self, r: &Ray, tmin: f64, tmax: f64) -> Option<HitRecord> {
+        eprintln!("Rect({})::hit({:?}, {}, {})", &self, &r, &tmin, &tmax);
         let t: f64;
         let axis0: f64;
         let axis1: f64;
@@ -154,6 +189,10 @@ impl Hittable for Rect {
                 ))
             },
         }
+    }
+
+    fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.inner_fmt(f)
     }
 }
 

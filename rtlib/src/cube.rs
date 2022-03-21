@@ -64,10 +64,19 @@ impl Cube {
                         ).box_clone())));
         Cube {walls: hl, pmin: *pt0, pmax: *pt1 }
     }
+
+    pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Cube: pmin: {} pmax: {} walls:\n", &self.pmin, &self.pmax)?;
+        for (i, w) in self.walls.list.iter().enumerate() {
+            write!(f, "{}: {}", &i, &w)?;
+        }
+        write!(f, "  End Cube")
+    }
 }
 
 impl Hittable for Cube {
     fn hit(&self, r: &Ray, tmin: f64, tmax: f64) -> Option<HitRecord> {
+        eprintln!("Cube::hit({:?}, {}, {})", &r, &tmin, &tmax);
         self.walls.hit(r, tmin, tmax)
     }
 
@@ -77,6 +86,25 @@ impl Hittable for Cube {
 
     fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<BoundingBox> {
         Some(BoundingBox::AabbF(AabbF{minimum: self.pmin, maximum: self.pmax}))
+    }
+
+    fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.inner_fmt(f)
+    }
+}
+
+impl std::fmt::Display for Cube {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.inner_fmt(f)
+    }
+}
+
+impl std::fmt::Debug for Cube {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Cube")
+            .field("pmin", &self.pmin)
+            .field("pmax", &self.pmax)
+            .finish()
     }
 }
 

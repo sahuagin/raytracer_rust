@@ -111,6 +111,12 @@ impl<'a> BvhNode {
         let mut rng = rand::thread_rng();
         (rng.gen::<f64>() * 3.) as u8
     }
+
+    pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // nodes should either have left and right populated, or not exist
+        self.p_left.as_ref().hitter_fmt(f)?;
+        self.p_right.as_ref().hitter_fmt(f)
+    }
 }
 
 impl<'a> Default for BvhNode {
@@ -153,6 +159,10 @@ impl<'a> Hittable for Bvh {
         } else {
             return None;
         }
+    }
+
+    fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.inner_fmt(f)
     }
 }
 

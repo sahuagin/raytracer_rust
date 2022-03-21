@@ -17,6 +17,8 @@ pub trait Hittable {
     fn box_clone<'a>(&self) -> Box<dyn Hittable>;
 
     fn bounding_box(&self, t0: f64, t1: f64) -> Option<BoundingBox>;
+
+    fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result;
 }
 
 impl Hittable for Hitters {
@@ -52,6 +54,27 @@ impl Hittable for Hitters {
         }
     }
 
+    fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Hitters::HitList(x) => x.inner_fmt(f),
+            Hitters::Sphere(x) => x.inner_fmt(f),
+            Hitters::MovingSphere(x) => x.inner_fmt(f),
+            Hitters::BoundingBox(x) => x.inner_fmt(f),
+            Hitters::Cube(x) => x.inner_fmt(f),
+            Hitters::BVolumeHierarchy(x) | Hitters::BvhNode(x) => x.inner_fmt(f),
+            Hitters::FlipNormal(x) => x.inner_fmt(f),
+            Hitters::Rect(x) => x.inner_fmt(f),
+            Hitters::Nothing(_x) => write!(f, "Hitter::Nothing"),
+        }
+
+    }
+
+}
+
+impl std::fmt::Display for Hitters {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.hitter_fmt(f)
+    }
 }
 
 
@@ -62,6 +85,11 @@ pub struct FlipNormal(Box<dyn Hittable>);
 impl FlipNormal {
     pub fn new(hit: &Box<dyn Hittable>) -> Self {
         FlipNormal(hit.box_clone())
+    }
+
+    pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "FlipNormal of ")?;
+        self.0.as_ref().hitter_fmt(f)
     }
 }
 
@@ -82,6 +110,10 @@ impl Hittable for FlipNormal {
         self.0.bounding_box(t0, t1)
     }
 
+    fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.hitter_fmt(f)
+    }
+
 }
 
 #[derive(Clone, Copy, Default)]
@@ -97,6 +129,10 @@ impl Hittable for NoBatter {
 
     fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<BoundingBox> {
         None
+    }
+
+    fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Swing, batter, batter, batter, batter, Swing, NoBatter!")
     }
 }
 
@@ -191,6 +227,13 @@ impl Clone for Box<dyn Hittable> {
         self.box_clone()
     }
 }
+
+impl std::fmt::Display for Box<dyn Hittable> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.as_ref().hitter_fmt(f)
+    }
+}
+
 
 impl std::fmt::Display for HitRecord {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

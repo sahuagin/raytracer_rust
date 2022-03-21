@@ -5,8 +5,11 @@ pub use Vec3 as Point3;
 pub use Vec3 as Color;
 //use std::error::Error;
 use std::cmp::Ordering;
+use std::convert::From;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+
+//#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug)]
 //pub struct Vec3T<T, X: Into<T>, Y: Into<T>, Z: Into<T>>
 //where T: From<X> + From<Y> + From<Z> {
 //pub struct Vec3T<T: float::Float +
@@ -22,6 +25,24 @@ pub struct Vec3T<T: float::Float + std::fmt::Display> {
     pub x: T,
     pub y: T,
     pub z: T,
+}
+
+impl<T> From<[T; 3]> for Vec3T<T>
+where
+    T: float::Float + std::fmt::Display,
+{
+    fn from(item: [T; 3]) -> Self {
+        Vec3T{x: item[0], y: item[1], z: item[2]}
+    }
+}
+
+impl<T> From<Vec3T<T>> for [T; 3]
+where
+    T: float::Float + std::fmt::Display
+{
+    fn from(item: Vec3T<T>) -> Self {
+        [item.x, item.y, item.z]
+    }
 }
 
 trait Vector3Trait {
@@ -160,6 +181,24 @@ where
 
     pub fn partial_cmp_by_z(&self, rhs: &Self) -> Option<Ordering> {
         self.z.partial_cmp(&rhs.z)
+    }
+}
+
+impl<T> PartialEq for Vec3T<T>
+where
+    T: float::Float
+       + std::fmt::Display,
+    f64: From<T>,
+{
+    fn eq(&self, other: &Self) -> bool {
+        let my_epsilon: T = T::from(0.0001_f64).unwrap();
+        if (self.x - other.x).abs() < my_epsilon &&
+        (self.y - other.y).abs() < my_epsilon &&
+        (self.z - other.z).abs() < my_epsilon 
+        {
+            return true;
+        }
+        false
     }
 }
 
