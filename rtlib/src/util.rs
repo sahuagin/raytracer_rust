@@ -397,7 +397,7 @@ pub fn hit_sphere(center: &Point3, radius: f64, r: &Ray) -> f64 {
 #[allow(unused_imports, dead_code)]
 pub fn uv_for_sphere(hitvec: &Vec3) -> TextureCoord {
     let phi: f64 = libm::atan2(hitvec.z, hitvec.x);
-    let theta: f64 = libm::asin(hitvec.y);
+    let theta: f64 = hitvec.y.asin();//libm::asin(hitvec.y);
     TextureCoord{
         u: 1. - (phi + std::f64::consts::PI) / (2. * std::f64::consts::PI),
         v: (theta + std::f64::consts::PI/2.) / std::f64::consts::PI, }
@@ -798,6 +798,9 @@ pub fn cornell_box() -> HitList {
             TranslateHittable::new(&rotated, &vect!(130, 0, 65))
             );
     hl.add(Hitters::Custom(translated));
+    let sphere = Sphere::new(&vect!(165./2., 165. + 165./4., 165./2.), 165./4., light);
+    let transfer_sphere = TranslateHittable::new(&sphere.box_clone(), &vect!(130, 0, 65));
+    hl.add(Hitters::Custom(transfer_sphere.box_clone()));
     let cube: Box<dyn Hittable> = Box::new(
         Cube::new( &vect!(0, 0, 0), &vect!(165, 330, 165), &white)
         );
