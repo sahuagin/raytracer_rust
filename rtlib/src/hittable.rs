@@ -155,6 +155,26 @@ pub enum Hitters {
 #[derive(Clone, Copy, Debug, Default)]
 pub struct TextureCoord {pub u: f64, pub v: f64}
 
+impl PartialEq for TextureCoord
+{
+    fn eq(&self, other: &Self) -> bool {
+        //eprintln!("TextureCoord::PartialEq({}, {})", &self, &other);
+        let my_epsilon: f64 = 0.0001_f64;
+        if (self.u - other.u).abs() < my_epsilon &&
+        (self.v - other.v).abs() < my_epsilon
+        {
+            return true;
+        }
+        false
+    }
+}
+
+impl std::fmt::Display for TextureCoord {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "TextureCoord: u: {} v: {}", &self.u, &self.v)
+    }
+}
+
 #[allow(unused_imports, dead_code)]
 #[derive(Clone)]
 pub struct HitRecord {
@@ -210,10 +230,8 @@ impl PartialEq for HitRecord
            self.p == other.p &&
            self.normal == other.normal &&
            //self.material == other.material &&
-           self.texture_coord.unwrap_or_default().u ==
-                other.texture_coord.unwrap_or_default().u &&
-           self.texture_coord.unwrap_or_default().v ==
-                other.texture_coord.unwrap_or_default().v &&
+           self.texture_coord.unwrap_or_default() ==
+                other.texture_coord.unwrap_or_default() &&
            self.front_face == other.front_face {
                 return true;
            }

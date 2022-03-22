@@ -76,7 +76,7 @@ impl Cube {
 
 impl Hittable for Cube {
     fn hit(&self, r: &Ray, tmin: f64, tmax: f64) -> Option<HitRecord> {
-        eprintln!("Cube::hit({:?}, {}, {})", &r, &tmin, &tmax);
+        //eprintln!("Cube::hit({:?}, {}, {})", &r, &tmin, &tmax);
         self.walls.hit(r, tmin, tmax)
     }
 

@@ -205,40 +205,24 @@ where
         if ret_self.bbox.is_none() { 
             return ret_self;
         }
+
+        let rotate_y = |invec: Vec3, angle1: f64| {
+            let radians = std::f64::consts::PI / 180. * angle1;
+            Vec3::new(
+                radians.cos() * invec.x + radians.sin() * invec.z,
+                invec.y,
+                -1. * radians.sin() * invec.x + radians.cos() * invec.z,
+            )
+        };
         // otherwise we have a bounding box to rotate.    
         let bbox = ret_self.bbox.unwrap();
-        eprintln!("bbox={}", bbox);
         let mut min: [f64; 3] = [f64::MAX, f64::MAX, f64::MAX];
         let mut max: [f64; 3] = [f64::MIN, f64::MIN, f64::MIN];
-        for i in 0..2 {
-            for j in 0..2 {
-                for k in 0..2 {
-                    let x: f64 = i as f64 * &bbox.max().x + (1. - i as f64) * &bbox.min().x;
-                    let y: f64 = j as f64 * &bbox.max().y + (1. - j as f64) * &bbox.min().y;
-                    let z: f64 = k as f64 * &bbox.max().z + (1. - k as f64) * &bbox.min().z;
-
-                    let newx: f64 = (ret_self.cos_theta * x) + (ret_self.sin_theta * z);
-                    // no Y as we're rotating around Y
-                    let newz: f64 = (-1. * ret_self.sin_theta * x ) + (ret_self.sin_theta * z);
-                    eprintln!("ijk({},{},{}) newx:newz ({},{})", &i, &j, &k, &newx, &newz);
-
-                    let tester: [f64; 3] = [newx, y, newz];
-                    for c in 0..3 {
-                        if tester[c] > max[c] {
-                            max[c] = tester[c];
-                            eprintln!(
-                                "index: {} tester[c]={} > max[c]={} setting to max[c]",
-                                c, &tester[c], &max[c]);
-                        }
-                        if tester[c] < min[c] {
-                            min[c] = tester[c];
-                            eprintln!(
-                                "index: {} tester[c]={} < min[c]={} setting to min[c]",
-                                c, &tester[c], &max[c]);
-                        }
-                    }
-                }
-            }
+        let rot_min: [f64; 3] = rotate_y(bbox.min(), angle).into();
+        let rot_max: [f64; 3] = rotate_y(bbox.max(), angle).into();
+        for i in 0..rot_min.len() {
+            min[i] = rot_min[i].min(rot_max[i]);
+            max[i] = rot_min[i].max(rot_max[i]);
         }
 
         ret_self.bbox = Some(BoundingBox::AabbF(AabbF::new(min.into(), max.into())));
@@ -259,32 +243,24 @@ where
         if ret_self.bbox.is_none() { 
             return ret_self;
         }
+
+        let rotate_x = |invec: Vec3, angle1: f64| {
+            let radians = std::f64::consts::PI / 180. * angle1;
+            Vec3::new(
+                invec.x,
+                radians.cos() * invec.y - radians.sin() * invec.z,
+                radians.sin() * invec.y + radians.cos() * invec.z,
+            )
+        };
         // otherwise we have a bounding box to rotate.    
         let bbox = ret_self.bbox.unwrap();
         let mut min: [f64; 3] = [f64::MAX, f64::MAX, f64::MAX];
         let mut max: [f64; 3] = [f64::MIN, f64::MIN, f64::MIN];
-        for i in 0..2 {
-            for j in 0..2 {
-                for k in 0..2 {
-                    let x: f64 = i as f64 * &bbox.max().x + (1. - i as f64) * &bbox.min().x;
-                    let y: f64 = j as f64 * &bbox.max().y + (1. - j as f64) * &bbox.min().y;
-                    let z: f64 = k as f64 * &bbox.max().z + (1. - k as f64) * &bbox.min().z;
-
-                    // no newx because rotating around x
-                    let newy: f64 = (ret_self.cos_theta * y) - (ret_self.sin_theta * z);
-                    let newz: f64 = (ret_self.sin_theta * y ) + (ret_self.cos_theta * z);
-
-                    let tester: [f64; 3] = [x, newy, newz];
-                    for c in 0..3 {
-                        if tester[c] > max[c] {
-                            max[c] = tester[c];
-                        }
-                        if tester[c] < min[c] {
-                            min[c] = tester[c];
-                        }
-                    }
-                }
-            }
+        let rot_min: [f64; 3] = rotate_x(bbox.min(), angle).into();
+        let rot_max: [f64; 3] = rotate_x(bbox.max(), angle).into();
+        for i in 0..rot_min.len() {
+            min[i] = rot_min[i].min(rot_max[i]);
+            max[i] = rot_min[i].max(rot_max[i]);
         }
 
         ret_self.bbox = Some(BoundingBox::AabbF(AabbF::new(min.into(), max.into())));
@@ -305,31 +281,24 @@ where
         if ret_self.bbox.is_none() { 
             return ret_self;
         }
+
+        let rotate_z = |invec: Vec3, angle1: f64| {
+            let radians = std::f64::consts::PI / 180. * angle1;
+            Vec3::new(
+                radians.cos() * invec.x - radians.sin() * invec.y,
+                radians.sin() * invec.x + radians.cos() * invec.y,
+                invec.z,
+            )
+        };
         // otherwise we have a bounding box to rotate.    
         let bbox = ret_self.bbox.unwrap();
         let mut min: [f64; 3] = [f64::MAX, f64::MAX, f64::MAX];
         let mut max: [f64; 3] = [f64::MIN, f64::MIN, f64::MIN];
-        for i in 0..2 {
-            for j in 0..2 {
-                for k in 0..2 {
-                    let x: f64 = i as f64 * &bbox.max().x + (1. - i as f64) * &bbox.min().x;
-                    let y: f64 = j as f64 * &bbox.max().y + (1. - j as f64) * &bbox.min().y;
-                    let z: f64 = k as f64 * &bbox.max(). z + (1. - k as f64) * &bbox.min().z;
-
-                    let newx: f64 = (ret_self.cos_theta * x) - (ret_self.sin_theta * y);
-                    let newy: f64 = (ret_self.sin_theta * x ) + (ret_self.cos_theta * y);
-                    // no Z as we're rotating around Z
-                    let tester: [f64; 3] = [newx, newy, z];
-                    for c in 0..3 {
-                        if tester[c] > max[c] {
-                            max[c] = tester[c];
-                        }
-                        if tester[c] < min[c] {
-                            min[c] = tester[c];
-                        }
-                    }
-                }
-            }
+        let rot_min: [f64; 3] = rotate_z(bbox.min(), angle).into();
+        let rot_max: [f64; 3] = rotate_z(bbox.max(), angle).into();
+        for i in 0..rot_min.len() {
+            min[i] = rot_min[i].min(rot_max[i]);
+            max[i] = rot_min[i].max(rot_max[i]);
         }
 
         ret_self.bbox = Some(BoundingBox::AabbF(AabbF::new(min.into(), max.into())));
@@ -355,18 +324,18 @@ where
 impl Hittable for RotateHittable {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
         let direction: Vec3 = self.unrotate(&r.direction());
-        eprintln!("r.direction: {:?} unrotated to direction: {:?}", &r.direction(), &direction);
+        //eprintln!("r.direction: {:?} unrotated to direction: {:?}", &r.direction(), &direction);
         let origin: Vec3 = self.unrotate(&r.origin());
-        eprintln!("r.origin: {:?} unrotated to origin: {:?}", &r.origin(), &origin);
+        //eprintln!("r.origin: {:?} unrotated to origin: {:?}", &r.origin(), &origin);
         let rotated_r = Ray::new(
             &origin,
             &direction,
             Some(r.time()));
-        eprintln!("Ray: {:?} unrotated_Ray: {:?}", r, rotated_r);
+        //eprintln!("Ray: {:?} unrotated_Ray: {:?}", r, rotated_r);
 
         match self.instance.hit(&rotated_r, t_min, t_max) {
             Some(hitrec) => {
-                eprintln!("Got a hit! {:?}", &hitrec);
+                //eprintln!("Got a hit! {:?}", &hitrec);
                 let p: Vec3 = self.rotate(&hitrec.p);
                 let normal: Vec3 = self.rotate(&hitrec.normal);
                 Some(HitRecord{
@@ -561,7 +530,6 @@ mod test {
 
     #[test]
     fn test_rotate_x() {
-        let angle0: f64 = 180.;
         let p0 = vect!(0,0,0);
         let p1 = vect!(2,3,4);
         let c0 = Cube::new(
@@ -572,88 +540,97 @@ mod test {
                     TextureType::ConstantTexture(
                         ConstantTexture::new(&vect!(4,4,4))))));
 
-        let rb = RotateHittable::new(&c0.box_clone()).with_rotate_around_x(angle0).build();
-        //eprintln!("Cube: {:?}", c0);
-        //eprintln!("RotateHittable: {:?}", rb);
+        let angles: [f64; 12] = [
+            0., 45., 90., 135.,
+            180., 225., 360.,
+            -45., -135., -180.,
+            -225., -360.
+        ];
 
-        let rotate_x = |invec: Vec3, angle: f64| {
-            let radians = std::f64::consts::PI / 180. * angle;
-            Vec3::new(
-                invec.x,
-                radians.cos() * invec.y - radians.sin() * invec.z,
-                radians.sin() * invec.y + radians.cos() * invec.z,
-            )
-        };
+        for angle0 in angles {
+            let rb = RotateHittable::new(&c0.box_clone()).with_rotate_around_x(angle0).build();
+            //eprintln!("Cube: {:?}", c0);
+            //eprintln!("RotateHittable: {:?}", rb);
 
-        let _unrotate_x = |invec: Vec3, angle: f64| {
-            let radians = std::f64::consts::PI / 180. * angle;
-            Vec3::new(
-                invec.x,
-                radians.cos() * invec.y + radians.sin() * invec.z,
-                -1. * radians.sin() * invec.y + radians.cos() * invec.z,
-            )
-        };
+            let rotate_x = |invec: Vec3, angle: f64| {
+                let radians = std::f64::consts::PI / 180. * angle;
+                Vec3::new(
+                    invec.x,
+                    radians.cos() * invec.y - radians.sin() * invec.z,
+                    radians.sin() * invec.y + radians.cos() * invec.z,
+                )
+            };
+
+            let _unrotate_x = |invec: Vec3, angle: f64| {
+                let radians = std::f64::consts::PI / 180. * angle;
+                Vec3::new(
+                    invec.x,
+                    radians.cos() * invec.y + radians.sin() * invec.z,
+                    -1. * radians.sin() * invec.y + radians.cos() * invec.z,
+                )
+            };
 
 
-        let rot_p0 = rotate_x(p0, angle0);
-        let rot_p1 = rotate_x(p1, angle0);
-        //eprintln!("rot_p0: {}", &rot_p0);
-        //eprintln!("rot_p1: {}", &rot_p1);
+            let rot_p0 = rotate_x(p0, angle0);
+            let rot_p1 = rotate_x(p1, angle0);
+            //eprintln!("rot_p0: {}", &rot_p0);
+            //eprintln!("rot_p1: {}", &rot_p1);
 
-        let rot_min = vect!(
-            rot_p0.x.min(rot_p1.x),
-            rot_p0.y.min(rot_p1.y),
-            rot_p0.z.min(rot_p1.z)
-        );
-        //eprintln!("rot_min: {}", &rot_min);
-
-        let rot_max = vect!(
-            rot_p0.x.max(rot_p1.x),
-            rot_p0.y.max(rot_p1.y),
-            rot_p0.z.max(rot_p1.z)
+            let rot_min = vect!(
+                rot_p0.x.min(rot_p1.x),
+                rot_p0.y.min(rot_p1.y),
+                rot_p0.z.min(rot_p1.z)
             );
-        //eprintln!("rot_max: {}", &rot_max);
+            //eprintln!("rot_min: {}", &rot_min);
+
+            let rot_max = vect!(
+                rot_p0.x.max(rot_p1.x),
+                rot_p0.y.max(rot_p1.y),
+                rot_p0.z.max(rot_p1.z)
+                );
+            //eprintln!("rot_max: {}", &rot_max);
 
 
-        let bb = BoundingBox::AabbF(AabbF::new(rot_min, rot_max));
-        assert_eq!(rb.bounding_box(0.0, 1.0).as_ref(), Some(&bb));
+            let bb = BoundingBox::AabbF(AabbF::new(rot_min, rot_max));
+            assert_eq!(rb.bounding_box(0.0, 1.0).as_ref(), Some(&bb));
 
-        // from the front
-        let r = Ray::new(
-            &rotate_x(vect!(1, 1, 6), angle0),
-            &rotate_x(vect!(0, 0, -1), angle0),
-            // give it enough length/time? that it hits
-            Some(10.0)
-            );
+            // from the front
+            let r = Ray::new(
+                &rotate_x(vect!(1, 1, 6), angle0),
+                &rotate_x(vect!(0, 0, -1), angle0),
+                // give it enough length/time? that it hits
+                Some(10.0)
+                );
 
-        //eprintln!("Rotated_Ray: {:?}", &r);
+            //eprintln!("Rotated_Ray: {:?}", &r);
 
-        let pat = vect!(1, -1, -4);
-        //let unrot_pat = unrotate_x(pat, 180.);
-        let mut hr_ans = HitRecord::new(
-            pat,
-            2.0,
-            MaterialType::DiffuseLight(
-                DiffuseLight::new(
-                    TextureType::ConstantTexture(
-                        ConstantTexture::new(&vect!(4,4,4))))));
-        // right, since we've rotated 180, all of the non-x axis are flipped
-        // so since we were aiming at -1, that would be rotated on the way in, 
-        // (because it's explicitly rotated in the test before testing for a hit)
-        // rather than get a (0,0,1) that we'd get normally, we get the (0,0,-1)
-        // because it's rotated 180
-        hr_ans.normal = vect!(0,0,-1);
-        hr_ans.texture_coord = Some(TextureCoord{u: 0.5, v: 1.0/3.0});
-        //eprintln!("pat: {} unrot_pat: {}", &pat, &unrot_pat);
+            let pat = vect!(1, 1, 4);
+            let rot_pat = rotate_x(pat, angle0);
+            //let unrot_pat = unrotate_x(pat, 180.);
+            let mut hr_ans = HitRecord::new(
+                rot_pat,
+                2.0,
+                MaterialType::DiffuseLight(
+                    DiffuseLight::new(
+                        TextureType::ConstantTexture(
+                            ConstantTexture::new(&vect!(4,4,4))))));
+            // right, since we've rotated 180, all of the non-x axis are flipped
+            // so since we were aiming at -1, that would be rotated on the way in, 
+            // (because it's explicitly rotated in the test before testing for a hit)
+            // rather than get a (0,0,1) that we'd get normally, we get the (0,0,-1)
+            // because it's rotated 180
+            hr_ans.normal = rotate_x(vect!(0,0,1), angle0);
+            hr_ans.texture_coord = Some(TextureCoord{u: 0.5, v: 1.0/3.0});
+            //eprintln!("pat: {} unrot_pat: {}", &pat, &unrot_pat);
 
-        let hr = rb.hit(&r, 0.0, 10.0);
-        //eprintln!("hr={:?}", hr);
-        assert_eq!(hr, Some(hr_ans.clone()));
+            let hr = rb.hit(&r, 0.0, 10.0);
+            //eprintln!("hr={:?}", hr);
+            assert_eq!(hr, Some(hr_ans.clone()));
+        }
     }
 
     #[test]
     fn test_rotate_y() {
-        let angle0: f64 = 180.;
         let p0 = vect!(0,0,0);
         let p1 = vect!(2,3,4);
         let c0 = Cube::new(
@@ -663,84 +640,93 @@ mod test {
                 DiffuseLight::new(
                     TextureType::ConstantTexture(
                         ConstantTexture::new(&vect!(4,4,4))))));
+        let angles: [f64; 12] = [
+            0., 45., 90., 135.,
+            180., 225., 360.,
+            -45., -135., -180.,
+            -225., -360.
+        ];
 
-        let rb = RotateHittable::new(&c0.box_clone()).with_rotate_around_y(angle0).build();
-        eprintln!("Cube: {:?}", c0);
-        eprintln!("RotateHittable: {:?}", rb);
+        for angle0 in angles {
 
-        let rotate_y = |invec: Vec3, angle: f64| {
-            let radians = std::f64::consts::PI / 180. * angle;
-            Vec3::new(
-                radians.cos() * invec.x + radians.sin() * invec.z,
-                invec.y,
-                -1. * radians.sin() * invec.x + radians.cos() * invec.z,
-            )
-        };
+            let rb = RotateHittable::new(&c0.box_clone()).with_rotate_around_y(angle0).build();
+            //eprintln!("Cube: {:?}", c0);
+            //eprintln!("RotateHittable: {:?}", rb);
 
-        let unrotate_y = |invec: Vec3, angle: f64| {
-            let radians = std::f64::consts::PI / 180. * angle;
-            Vec3::new(
-                radians.cos() * invec.x - radians.sin() * invec.z,
-                invec.y,
-                radians.sin() * invec.x + radians.cos() * invec.z,
-            )
-        };
+            let rotate_y = |invec: Vec3, angle: f64| {
+                let radians = std::f64::consts::PI / 180. * angle;
+                Vec3::new(
+                    radians.cos() * invec.x + radians.sin() * invec.z,
+                    invec.y,
+                    -1. * radians.sin() * invec.x + radians.cos() * invec.z,
+                )
+            };
+
+            let unrotate_y = |invec: Vec3, angle: f64| {
+                let radians = std::f64::consts::PI / 180. * angle;
+                Vec3::new(
+                    radians.cos() * invec.x - radians.sin() * invec.z,
+                    invec.y,
+                    radians.sin() * invec.x + radians.cos() * invec.z,
+                )
+            };
 
 
-        let rot_p0 = rotate_y(p0, angle0);
-        let rot_p1 = rotate_y(p1, angle0);
-        eprintln!("rot_p0: {}", &rot_p0);
-        eprintln!("rot_p1: {}", &rot_p1);
+            let rot_p0 = rotate_y(p0, angle0);
+            let rot_p1 = rotate_y(p1, angle0);
+            //eprintln!("rot_p0: {}", &rot_p0);
+            //eprintln!("rot_p1: {}", &rot_p1);
 
-        let rot_min = vect!(
-            rot_p0.x.min(rot_p1.x),
-            rot_p0.y.min(rot_p1.y),
-            rot_p0.z.min(rot_p1.z)
-        );
-        eprintln!("rot_min: {}", &rot_min);
-
-        let rot_max = vect!(
-            rot_p0.x.max(rot_p1.x),
-            rot_p0.y.max(rot_p1.y),
-            rot_p0.z.max(rot_p1.z)
+            let rot_min = vect!(
+                rot_p0.x.min(rot_p1.x),
+                rot_p0.y.min(rot_p1.y),
+                rot_p0.z.min(rot_p1.z)
             );
-        eprintln!("rot_max: {}", &rot_max);
+            //eprintln!("rot_min: {}", &rot_min);
+
+            let rot_max = vect!(
+                rot_p0.x.max(rot_p1.x),
+                rot_p0.y.max(rot_p1.y),
+                rot_p0.z.max(rot_p1.z)
+                );
+            //eprintln!("rot_max: {}", &rot_max);
 
 
-        let bb = BoundingBox::AabbF(AabbF::new(rot_min, rot_max));
-        assert_eq!(rb.bounding_box(0.0, 1.0).as_ref(), Some(&bb));
+            let bb = BoundingBox::AabbF(AabbF::new(rot_min, rot_max));
+            assert_eq!(rb.bounding_box(0.0, 1.0).as_ref(), Some(&bb));
 
-        // from the front
-        let r = Ray::new(
-            &rotate_y(vect!(1, 1, 6), angle0),
-            &rotate_y(vect!(0, 0, -1), angle0),
-            // give it enough length/time? that it hits
-            Some(10.0)
-            );
+            // from the front
+            let r = Ray::new(
+                &rotate_y(vect!(1, 1, 6), angle0),
+                &rotate_y(vect!(0, 0, -1), angle0),
+                // give it enough length/time? that it hits
+                Some(10.0)
+                );
 
-        eprintln!("Rotated_Ray: {:?}", &r);
+            //eprintln!("Rotated_Ray: {:?}", &r);
 
-        let pat = vect!(1, -1, -4);
-        let unrot_pat = unrotate_y(pat, angle0);
-        let mut hr_ans = HitRecord::new(
-            vect!(1, -1, -4),
-            2.0,
-            MaterialType::DiffuseLight(
-                DiffuseLight::new(
-                    TextureType::ConstantTexture(
-                        ConstantTexture::new(&vect!(4,4,4))))));
-        hr_ans.normal = vect!(0,0,-1);
-        hr_ans.texture_coord = Some(TextureCoord{u: 0.5, v: 1.0/3.0});
-        eprintln!("pat: {} unrot_pat: {}", &pat, &unrot_pat);
+            let pat = vect!(1, 1, 4);
+            let rot_pat = rotate_y(pat, angle0);
+            let _unrot_pat = unrotate_y(pat, angle0);
+            let mut hr_ans = HitRecord::new(
+                rot_pat,
+                2.0,
+                MaterialType::DiffuseLight(
+                    DiffuseLight::new(
+                        TextureType::ConstantTexture(
+                            ConstantTexture::new(&vect!(4,4,4))))));
+            hr_ans.normal = rotate_y(vect!(0,0,1), angle0);
+            hr_ans.texture_coord = Some(TextureCoord{u: 0.5, v: 1.0/3.0});
+            //eprintln!("pat: {} unrot_pat: {}", &pat, &unrot_pat);
 
-        let hr = rb.hit(&r, 0.0, 10.0);
-        eprintln!("hr={:?}", hr);
-        assert_eq!(hr, Some(hr_ans.clone()));
+            let hr = rb.hit(&r, 0.0, 10.0);
+            //eprintln!("hr={:?}", hr);
+            assert_eq!(hr, Some(hr_ans.clone()));
+        }
     }
 
     #[test]
     fn test_rotate_z() {
-        let angle0: f64 = 180.;
         let p0 = vect!(0,0,0);
         let p1 = vect!(2,3,4);
         let c0 = Cube::new(
@@ -751,78 +737,88 @@ mod test {
                     TextureType::ConstantTexture(
                         ConstantTexture::new(&vect!(4,4,4))))));
 
-        let rb = RotateHittable::new(&c0.box_clone()).with_rotate_around_z(angle0).build();
-        //eprintln!("Cube: {:?}", c0);
-        //eprintln!("RotateHittable: {:?}", rb);
+        let angles: [f64; 12] = [
+            0., 45., 90., 135.,
+            180., 225., 360.,
+            -45., -135., -180.,
+            -225., -360.
+        ];
 
-        let rotate_z = |invec: Vec3, angle: f64| {
-            let radians = std::f64::consts::PI / 180. * angle;
-            Vec3::new(
-                radians.cos() * invec.x - radians.sin() * invec.y,
-                radians.sin() * invec.x + radians.cos() * invec.y,
-                invec.z,
-            )
-        };
+        for angle0 in angles {
+            let rb = RotateHittable::new(&c0.box_clone()).with_rotate_around_z(angle0).build();
+            //eprintln!("Cube: {:?}", c0);
+            //eprintln!("RotateHittable: {:?}", rb);
 
-        let unrotate_y = |invec: Vec3, angle: f64| {
-            let radians = std::f64::consts::PI / 180. * angle;
-            Vec3::new(
-                radians.cos() * invec.x - -1. * radians.sin() * invec.y,
-                -1. * radians.sin() * invec.x + radians.cos() * invec.y,
-                invec.z,
-            )
-        };
+            let rotate_z = |invec: Vec3, angle: f64| {
+                let radians = std::f64::consts::PI / 180. * angle;
+                Vec3::new(
+                    radians.cos() * invec.x - radians.sin() * invec.y,
+                    radians.sin() * invec.x + radians.cos() * invec.y,
+                    invec.z,
+                )
+            };
+
+            let unrotate_y = |invec: Vec3, angle: f64| {
+                let radians = std::f64::consts::PI / 180. * angle;
+                Vec3::new(
+                    radians.cos() * invec.x - -1. * radians.sin() * invec.y,
+                    -1. * radians.sin() * invec.x + radians.cos() * invec.y,
+                    invec.z,
+                )
+            };
 
 
-        let rot_p0 = rotate_z(p0, angle0);
-        let rot_p1 = rotate_z(p1, angle0);
-        //eprintln!("rot_p0: {}", &rot_p0);
-        //eprintln!("rot_p1: {}", &rot_p1);
+            let rot_p0 = rotate_z(p0, angle0);
+            let rot_p1 = rotate_z(p1, angle0);
+            //eprintln!("rot_p0: {}", &rot_p0);
+            //eprintln!("rot_p1: {}", &rot_p1);
 
-        let rot_min = vect!(
-            rot_p0.x.min(rot_p1.x),
-            rot_p0.y.min(rot_p1.y),
-            rot_p0.z.min(rot_p1.z)
-        );
-        //eprintln!("rot_min: {}", &rot_min);
-
-        let rot_max = vect!(
-            rot_p0.x.max(rot_p1.x),
-            rot_p0.y.max(rot_p1.y),
-            rot_p0.z.max(rot_p1.z)
+            let rot_min = vect!(
+                rot_p0.x.min(rot_p1.x),
+                rot_p0.y.min(rot_p1.y),
+                rot_p0.z.min(rot_p1.z)
             );
-        //eprintln!("rot_max: {}", &rot_max);
+            //eprintln!("rot_min: {}", &rot_min);
+
+            let rot_max = vect!(
+                rot_p0.x.max(rot_p1.x),
+                rot_p0.y.max(rot_p1.y),
+                rot_p0.z.max(rot_p1.z)
+                );
+            //eprintln!("rot_max: {}", &rot_max);
 
 
-        let bb = BoundingBox::AabbF(AabbF::new(rot_min, rot_max));
-        assert_eq!(rb.bounding_box(0.0, 1.0).as_ref(), Some(&bb));
+            let bb = BoundingBox::AabbF(AabbF::new(rot_min, rot_max));
+            assert_eq!(rb.bounding_box(0.0, 1.0).as_ref(), Some(&bb));
 
-        // from the front
-        let r = Ray::new(
-            &rotate_z(vect!(1, 1, 6), angle0),
-            &rotate_z(vect!(0, 0, -1), angle0),
-            // give it enough length/time? that it hits
-            Some(10.0)
-            );
+            // from the front
+            let r = Ray::new(
+                &rotate_z(vect!(1, 1, 6), angle0),
+                &rotate_z(vect!(0, 0, -1), angle0),
+                // give it enough length/time? that it hits
+                Some(10.0)
+                );
 
-        eprintln!("Rotated_Ray: {:?}", &r);
+            //eprintln!("Rotated_Ray: {:?}", &r);
 
-        let pat = vect!(1, -1, -4);
-        let unrot_pat = unrotate_y(pat, angle0);
-        let mut hr_ans = HitRecord::new(
-            pat,
-            2.0,
-            MaterialType::DiffuseLight(
-                DiffuseLight::new(
-                    TextureType::ConstantTexture(
-                        ConstantTexture::new(&vect!(4,4,4))))));
-        hr_ans.normal = vect!(0,0,-1);
-        hr_ans.texture_coord = Some(TextureCoord{u: 0.5, v: 1.0/3.0});
-        eprintln!("pat: {} unrot_pat: {}", &pat, &unrot_pat);
+            let pat = vect!(1, 1, 4);
+            let rot_pat = rotate_z(pat, angle0);
+            let _unrot_pat = unrotate_y(pat, angle0);
+            let mut hr_ans = HitRecord::new(
+                rot_pat,
+                2.0,
+                MaterialType::DiffuseLight(
+                    DiffuseLight::new(
+                        TextureType::ConstantTexture(
+                            ConstantTexture::new(&vect!(4,4,4))))));
+            hr_ans.normal = vect!(0,0,1);
+            hr_ans.texture_coord = Some(TextureCoord{u: 0.5, v: 1.0/3.0});
+            //eprintln!("pat: {} unrot_pat: {}", &pat, &unrot_pat);
 
-        let hr = rb.hit(&r, 0.0, 10.0);
-        eprintln!("hr={:?}", hr);
-        assert_eq!(hr, Some(hr_ans.clone()));
+            let hr = rb.hit(&r, 0.0, 10.0);
+            //eprintln!("hr={:?}", hr);
+            assert_eq!(hr, Some(hr_ans.clone()));
+        }
     }
 }
 

@@ -108,7 +108,7 @@ impl std::fmt::Display for Rect {
 
 impl Hittable for Rect {
     fn hit(&self, r: &Ray, tmin: f64, tmax: f64) -> Option<HitRecord> {
-        eprintln!("Rect({})::hit({:?}, {}, {})", &self, &r, &tmin, &tmax);
+        //eprintln!("Rect({})::hit({:?}, {}, {})", &self, &r, &tmin, &tmax);
         let t: f64;
         let axis0: f64;
         let axis1: f64;
