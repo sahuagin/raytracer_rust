@@ -2,6 +2,10 @@ use std::{env, path::PathBuf};
 use libm;
 use std::fs::File;
 use std::io::prelude::*;
+use crate::instances::{
+    TranslateHittable,
+    RotateHittable,
+};
 use super::materials::{
     Dielectric,
     DiffuseLight,
@@ -777,8 +781,35 @@ pub fn cornell_box() -> HitList {
     hl.add(Hitters::FlipNormal(
             FlipNormal::new(
                 &Rect::new(0., 555., 0., 555., 555., &white, Axis::Z).box_clone())));
-    hl.add(Hitters::Cube(Cube::new(&vect!(130, 0, 65), &vect!(295, 165, 230), &white)));
-    hl.add(Hitters::Cube(Cube::new(&vect!(265, 0, 295), &vect!(430, 330, 460), &white)));
+    //hl.add(Hitters::Cube(Cube::new(&vect!(130, 0, 65), &vect!(295, 165, 230), &white)));
+    //hl.add(Hitters::Cube(Cube::new(&vect!(265, 0, 295), &vect!(430, 330, 460), &white)));
+    let cube = Cube::new(
+                   &vect!(0, 0, 0),
+                   &vect!(165, 165, 165),
+                   &white
+                   );
+    let cube: Box<dyn Hittable> = Box::new(cube);
+    let rotated: Box<dyn Hittable> =
+        Box::new(
+            RotateHittable::new( &cube ).with_rotate_around_y(-18.).build()
+            );
+    let translated: Box<dyn Hittable> = 
+        Box::new(
+            TranslateHittable::new(&rotated, &vect!(130, 0, 65))
+            );
+    hl.add(Hitters::Custom(translated));
+    let cube: Box<dyn Hittable> = Box::new(
+        Cube::new( &vect!(0, 0, 0), &vect!(165, 330, 165), &white)
+        );
+    let rotated: Box<dyn Hittable> =
+        Box::new(
+            RotateHittable::new( &cube ).with_rotate_around_y(15.).build()
+            );
+    let translated: Box<dyn Hittable> =
+        Box::new(
+            TranslateHittable::new(&rotated, &vect!(265, 0, 295))
+            );
+    hl.add(Hitters::Custom(translated));
     hl
 }
 

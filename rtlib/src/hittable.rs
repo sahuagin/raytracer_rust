@@ -32,6 +32,7 @@ impl Hittable for Hitters {
             Hitters::FlipNormal(x) => x.hit(r, t_min, t_max),
             Hitters::BVolumeHierarchy(x) | Hitters::BvhNode(x) => x.hit(r, t_min, t_max),
             Hitters::Rect(x) => x.hit(r, t_min, t_max),
+            Hitters::Custom(x) => x.hit(r, t_min, t_max),
             Hitters::Nothing(_x) => None,
         }
     }
@@ -50,6 +51,7 @@ impl Hittable for Hitters {
             Hitters::BVolumeHierarchy(x) | Hitters::BvhNode(x) => x.bounding_box(t0, t1),
             Hitters::FlipNormal(x) => x.bounding_box(t0, t1),
             Hitters::Rect(x) => x.bounding_box(t0, t1),
+            Hitters::Custom(x) => x.bounding_box(t0, t1),
             Hitters::Nothing(_x) => None,
         }
     }
@@ -64,6 +66,7 @@ impl Hittable for Hitters {
             Hitters::BVolumeHierarchy(x) | Hitters::BvhNode(x) => x.inner_fmt(f),
             Hitters::FlipNormal(x) => x.inner_fmt(f),
             Hitters::Rect(x) => x.inner_fmt(f),
+            Hitters::Custom(x) => x.hitter_fmt(f),
             Hitters::Nothing(_x) => write!(f, "Hitter::Nothing"),
         }
 
@@ -148,6 +151,7 @@ pub enum Hitters {
     Cube(Cube),
     FlipNormal(FlipNormal),
     Rect(Rect),
+    Custom(Box<dyn Hittable>),
     Nothing(NoBatter),
 }
 

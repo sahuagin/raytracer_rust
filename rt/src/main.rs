@@ -335,8 +335,8 @@ fn main() {
             matches
         },
         Some(("cornell_box", matches)) => {
-            look_from = vect!(278, 278, -800);
-            look_at = vect!(278, 278, 0);
+            look_from = vect!(278, 273, -800);
+            look_at = vect!(278, 273, 0);
             dist_to_focus = 10.0;
             APERTURE = 0.0;
             interior_light = Color::new(0.0, 0.0, 0.0);
