@@ -24,7 +24,7 @@ use super::textures::{
     TextureType};
 use super::ray::Ray;
 use super::rectangle::{Axis, Rect};
-use super::sphere::Sphere;
+use super::sphere::{Sphere, MovingSphere};
 #[allow(unused_imports)]
 use super::vec3::{self, dot, unit_vector, Color, Point3, Vec3};
 use super::{color_to_texture, vect, wrap_material};
@@ -438,7 +438,11 @@ pub fn refract(v: &Vec3, n: Vec3, ni_over_nt: f64) -> Option<Vec3> {
     }
 }
 #[allow(unused_imports, dead_code)]
-pub fn random_scene(rng: &mut impl rand::Rng, checked: bool) -> HitList {
+pub fn random_scene(
+    rng: &mut impl rand::Rng,
+    checked: bool,
+    moving: bool,
+    ) -> HitList {
     let mut hl: HitList = HitList::new();
     let checker: TextureType;
     if checked == true {
@@ -472,15 +476,31 @@ pub fn random_scene(rng: &mut impl rand::Rng, checked: bool) -> HitList {
             if (center - vect!(4.0, 0.2, 0.0)).length() > 0.9 {
                 if choose_mat < 0.8 {
                     // diffuse
-                    hl.add(Hitters::Sphere(Sphere::new(
-                        &center,
-                        0.2,
-                        MaterialType::Lambertian(Lambertian::new(&color_to_texture!(&vect!(
-                            rng.gen::<f64>() * rng.gen::<f64>(),
-                            rng.gen::<f64>() * rng.gen::<f64>(),
-                            rng.gen::<f64>() * rng.gen::<f64>()
-                        )))),
-                    )));
+                    if moving == false {
+                        hl.add(Hitters::Sphere(Sphere::new(
+                            &center,
+                            0.2,
+                            MaterialType::Lambertian(Lambertian::new(&color_to_texture!(&vect!(
+                                rng.gen::<f64>() * rng.gen::<f64>(),
+                                rng.gen::<f64>() * rng.gen::<f64>(),
+                                rng.gen::<f64>() * rng.gen::<f64>()
+                            )))),
+                        )));
+                    } else {
+                        hl.add(Hitters::MovingSphere(MovingSphere::new(
+                            center.clone(),
+                            center + vect!(0,0.5*rng.gen::<f64>(), 0),
+                            0.0,
+                            1.0,
+                            0.2,
+                            MaterialType::Lambertian(Lambertian::new(&color_to_texture!(&vect!(
+                                rng.gen::<f64>() * rng.gen::<f64>(),
+                                rng.gen::<f64>() * rng.gen::<f64>(),
+                                rng.gen::<f64>() * rng.gen::<f64>()
+                            )))),
+                        )));
+
+                    }
                 } else if choose_mat < 0.95 {
                     // metal
                     hl.add(Hitters::Sphere(Sphere::new(

@@ -121,6 +121,7 @@ fn main() {
             Command::new("random_scene")
             .about("Generates the cover of the RayTracing book. 3 orbs in center of picture, 100 spheres of random textures around. One large sphere for 'floor'.")
             .arg(clap::arg!(-x --checkerboard "Turns the base to a checkerboard pattern."))
+            .arg(clap::arg!(-m --movingspheres "Sets a small number of spheres to have motion blur."))
             )
         .subcommand(
             Command::new("two_spheres")
@@ -225,8 +226,8 @@ fn main() {
     let mut dist_to_focus: f64 = (look_from - look_at).length();
     #[allow(non_snake_case)]
     let mut APERTURE: f64 = ri.aperture as f64;
-    let start_time_in_sec:f64 = 0.0;
-    let stop_time_in_sec:f64 = 0.0;
+    let start_time_in_sec:f64 = ri.start as f64;
+    let stop_time_in_sec:f64 = ri.stop as f64;
     let vfov: f64 = ri.vfov as f64;
     let mut interior_light = ri.interior_light;
     let mut camera = Camera::new(
@@ -248,13 +249,15 @@ fn main() {
         Some(("random_scene", matches)) => {
             // this is already the default, so we only have to modify if the
             // checkerboard option is selected
+            let mut checkerboard: bool = false;
+            let mut movingspheres: bool = false;
             if matches.is_present("checkerboard") {
-                world = Arc::new(random_scene(&mut rng, true));
-            } else
-            {
-                world = Arc::new(random_scene(&mut rng, false));
+                checkerboard = true;
             }
-
+            if matches.is_present("movingspheres") {
+                movingspheres = true;
+            }
+            world = Arc::new(random_scene(&mut rng, checkerboard, movingspheres));
             matches
         },
         Some(("two_spheres", matches)) => {
@@ -359,6 +362,7 @@ fn main() {
     //eprintln!("the render data is {:?}", &ri);
 
     let camera = camera;
+    eprintln!("Camera before start: {:?}", &camera);
     let interior_light = interior_light;
 
     let mut bvh = Bvh::new();
