@@ -25,6 +25,7 @@ use rtlib::util::{
     color,
     color_just_attenuation,
     cornell_box,
+    cornell_smoke,
     earth_scene,
     Image,
     random_scene,
@@ -143,6 +144,10 @@ fn main() {
         subcommand(
             Command::new("cornell_box")
             .about("This is a replica of the original Cornell Box.")
+            ).
+        subcommand(
+            Command::new("cornell_smoke")
+            .about("Something about Cornell and smoke?")
             );
 
     let matches = cmd.get_matches();
@@ -356,13 +361,32 @@ fn main() {
             world = Arc::new(cornell_box());
             matches
         },
+        Some(("cornell_smoke", matches)) => {
+            look_from = vect!(278, 273, -800);
+            look_at = vect!(278, 273, 0);
+            dist_to_focus = 10.0;
+            APERTURE = 0.0;
+            interior_light = Color::new(0.0, 0.0, 0.0);
+            camera = Camera::new(
+                look_from,
+                look_at,
+                vect!(0,1,0),
+                40.,
+                ASPECT_RATIO,
+                APERTURE,
+                dist_to_focus,
+                0.0,
+                1.0);
+            world = Arc::new(cornell_smoke());
+            matches
+        },
         _ => unreachable!("clap should ensure we don't get here"),
     };
     //eprintln!("first get_matches {:?}", matches);
     //eprintln!("the render data is {:?}", &ri);
 
     let camera = camera;
-    eprintln!("Camera before start: {:?}", &camera);
+    //eprintln!("Camera before start: {:?}", &camera);
     let interior_light = interior_light;
 
     let mut bvh = Bvh::new();

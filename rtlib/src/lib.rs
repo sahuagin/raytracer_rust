@@ -19,6 +19,7 @@ pub mod util;
 pub mod vec3;
 pub mod perlin;
 pub mod rectangle;
+pub mod volumes;
 
 pub mod prelude {
     pub use super::aabb::*;
@@ -36,6 +37,7 @@ pub mod prelude {
     pub use super::textures::*;
     pub use super::util::*;
     pub use super::vec3::*;
+    pub use super::volumes::*;
 }
 
 #[allow(unused_macros, unused_imports)]

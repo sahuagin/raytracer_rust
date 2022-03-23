@@ -37,6 +37,7 @@ use super::hitlist::HitList;
 #[allow(unused_imports)]
 use super::hittable::{Hitters, TextureCoord};
 use num_traits::float;
+use crate::volumes::{ConstantMedium};
 
 #[allow(unused_imports, dead_code)]
 pub fn optional_arg<T>(thing: Option<T>) -> T
@@ -833,6 +834,87 @@ pub fn cornell_box() -> HitList {
             TranslateHittable::new(&rotated, &vect!(265, 0, 295))
             );
     hl.add(Hitters::Custom(translated));
+    hl
+}
+
+#[allow(unused_imports, dead_code)]
+pub fn cornell_smoke() -> HitList {
+    let mut hl = HitList::new();
+
+    let red: MaterialType = MaterialType::Lambertian(
+        Lambertian::new(
+            &TextureType::ConstantTexture(
+                ConstantTexture::new(&vect!(0.65, 0.05, 0.05)))));
+    let white: MaterialType = MaterialType::Lambertian(
+        Lambertian::new(
+                &TextureType::ConstantTexture(
+                        ConstantTexture::new(&vect!(0.73, 0.73, 0.73))
+                    )
+            )
+        );
+
+    let green: MaterialType = MaterialType::Lambertian(
+        Lambertian::new(
+            &TextureType::ConstantTexture(
+                ConstantTexture::new(&vect!(0.12, 0.45, 0.15))
+                )
+            )
+        );
+
+    let light: MaterialType = MaterialType::DiffuseLight(
+        DiffuseLight::new(
+            TextureType::ConstantTexture(
+                ConstantTexture::new(&vect!(7, 7, 7))
+            )
+        )
+    );
+
+    hl.add( Hitters::FlipNormal(
+                FlipNormal::new(
+                    &Rect::new(0., 555., 0., 555., 555., &green, Axis::X).box_clone())));
+    hl.add(Hitters::Rect(Rect::new(0., 555., 0., 555., 0., &red, Axis::X)));
+    hl.add(Hitters::Rect(Rect::new(113., 443., 127., 432., 554., &light, Axis::Y)));
+    hl.add( Hitters::FlipNormal(
+                FlipNormal::new(
+                    &Rect::new(0., 555., 0., 555., 555., &white, Axis::Y).box_clone())));
+    hl.add(Hitters::Rect(Rect::new(0., 555., 0., 555., 0., &white, Axis::Y)));
+    hl.add( Hitters::FlipNormal(
+                FlipNormal::new(
+                    &Rect::new(0., 555., 0., 555., 555., &white, Axis::Z).box_clone())));
+    let b1 = TranslateHittable::new(
+        &RotateHittable::new(
+            &Cube::new(&vect!(0, 0, 0), &vect!(165, 165, 165), &white).box_clone()
+            ).with_rotate_around_y(-18.).build().box_clone(), &vect!(130, 0, 65));
+    let b2 = TranslateHittable::new(
+        &RotateHittable::new(
+            &Cube::new(&vect!(0, 0, 0), &vect!(165, 330, 165), &white).box_clone()
+            ).with_rotate_around_y(15.).build().box_clone(), &vect!(265, 0, 295));
+    hl.add(
+        Hitters::Custom(
+        ConstantMedium::new(
+            b1.box_clone())
+            .with_density(0.01)
+            .with_phase_function(
+                MaterialType::Lambertian(
+                Lambertian::new(
+                    &TextureType::ConstantTexture(
+                        ConstantTexture::new(&vect!(1, 1, 1))
+                    ))))
+            .build().box_clone()
+        ));
+    hl.add(
+        Hitters::Custom(
+        ConstantMedium::new(
+            b2.box_clone())
+            .with_density(0.01)
+            .with_phase_function(
+                MaterialType::Lambertian(
+                Lambertian::new(
+                    &TextureType::ConstantTexture(
+                        ConstantTexture::new(&vect!(0, 0, 0))
+                    ))))
+            .build().box_clone()
+        ));
     hl
 }
 
