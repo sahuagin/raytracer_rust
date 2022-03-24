@@ -12,13 +12,13 @@ pub mod hitlist;
 pub mod hittable;
 pub mod instances;
 pub mod materials;
+pub mod perlin;
 pub mod ray;
+pub mod rectangle;
 pub mod sphere;
 pub mod textures;
 pub mod util;
 pub mod vec3;
-pub mod perlin;
-pub mod rectangle;
 pub mod volumes;
 
 pub mod prelude {
@@ -44,9 +44,7 @@ pub mod prelude {
 #[macro_export]
 macro_rules! color_to_texture {
     ($col:expr) => {
-        $crate::textures::TextureType::ConstantTexture($crate::textures::ConstantTexture::new(
-            $col,
-        ))
+        $crate::textures::TextureType::ConstantTexture($crate::textures::ConstantTexture::new($col))
     };
 }
 

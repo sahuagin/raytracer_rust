@@ -9,37 +9,26 @@ use rtlib;
 use rtmacros::vect;
 use std::{
     io::{stderr, Write},
-    sync::Arc,
     path::Path,
+    sync::Arc,
 };
 
 use rayon::prelude::*;
 
+use rtlib::bvh::Bvh;
 use rtlib::camera::Camera;
+use rtlib::hitlist::HitList;
 #[allow(unused_imports)]
 use rtlib::materials::{Dielectric, Lambertian, Metal};
 #[allow(unused_imports)]
 use rtlib::sphere::Sphere;
 #[allow(unused_imports)]
 use rtlib::util::{
-    color,
-    color_just_attenuation,
-    cornell_box,
-    cornell_smoke,
-    earth_scene,
-    final_scene,
-    Image,
-    one_million_ants_er_spheres,
-    random_scene,
-    simple_light_scene,
-    two_perlin_spheres,
-    two_spheres,
-    write_color,
+    color, color_just_attenuation, cornell_box, cornell_smoke, earth_scene, final_scene,
+    one_million_ants_er_spheres, random_scene, simple_light_scene, two_perlin_spheres, two_spheres,
+    write_color, Image,
 };
 use rtlib::vec3::Color;
-use rtlib::bvh::Bvh;
-use rtlib::hitlist::HitList;
-
 
 fn main() {
     #[derive(Debug, Clone)]
@@ -167,19 +156,33 @@ fn main() {
     // NOTE: If there is a default value for something, it'll always
     // show as "present", so we know we have settings for all of the
     // ones we have as default.
-    ri.samples = matches.value_of_t("num_samples").expect("Number of samples is required.");
-    ri.depth = matches.value_of_t("max_depth").expect("Maximum depth is required.");
-    ri.vfov = matches.value_of_t("vfov").expect("Vertical FOV is required.");
-    ri.width = matches.value_of_t("image_width").expect("Image width required.");
+    ri.samples = matches
+        .value_of_t("num_samples")
+        .expect("Number of samples is required.");
+    ri.depth = matches
+        .value_of_t("max_depth")
+        .expect("Maximum depth is required.");
+    ri.vfov = matches
+        .value_of_t("vfov")
+        .expect("Vertical FOV is required.");
+    ri.width = matches
+        .value_of_t("image_width")
+        .expect("Image width required.");
     ri.aperture = matches.value_of_t("aperture").expect("Aperture required.");
-    ri.start = matches.value_of_t("start_time").expect("Start time required.");
-    ri.stop = matches.value_of_t("stop_time").expect("Stop time required.");
+    ri.start = matches
+        .value_of_t("start_time")
+        .expect("Start time required.");
+    ri.stop = matches
+        .value_of_t("stop_time")
+        .expect("Stop time required.");
     if let Some(raw_texture_path) = matches.value_of_os("globe_texture") {
         let config_path = Path::new(raw_texture_path);
         ri.texture = Some(Image::new(&config_path.display()));
     }
 
-    let el: bool = matches.value_of_t("explicit_lighting").expect("Lighting type required.");
+    let el: bool = matches
+        .value_of_t("explicit_lighting")
+        .expect("Lighting type required.");
     if el == true {
         // the scene will provide it's own light, so objects don't have to produce
         // their own light
@@ -187,7 +190,7 @@ fn main() {
     }
 
     if matches.is_present("fast") {
-       ri = RenderInfo{
+        ri = RenderInfo {
             fast: true,
             depth: 5,
             samples: 5,
@@ -198,14 +201,13 @@ fn main() {
             stop: ri.stop,
             texture: ri.texture,
             interior_light: ri.interior_light,
-       }; 
+        };
     }
     // make read only
     let ri = ri;
 
     //eprintln!("Render info after arg parsing. {:?}", ri);
 
-    
     // For error handling
     let stdout = std::io::stdout();
     let mut handle = stdout.lock();
@@ -241,8 +243,8 @@ fn main() {
     let mut dist_to_focus: f64 = (look_from - look_at).length();
     #[allow(non_snake_case)]
     let mut APERTURE: f64 = ri.aperture as f64;
-    let start_time_in_sec:f64 = ri.start as f64;
-    let stop_time_in_sec:f64 = ri.stop as f64;
+    let start_time_in_sec: f64 = ri.start as f64;
+    let stop_time_in_sec: f64 = ri.stop as f64;
     let vfov: f64 = ri.vfov as f64;
     let mut interior_light = ri.interior_light;
     let mut camera = Camera::new(
@@ -274,7 +276,7 @@ fn main() {
             }
             world = Arc::new(random_scene(&mut rng, checkerboard, movingspheres));
             matches
-        },
+        }
         Some(("two_spheres", matches)) => {
             // we need to change the camera as well as populate a different world
             look_from = vect!(13, 2, 3);
@@ -284,16 +286,17 @@ fn main() {
             camera = Camera::new(
                 look_from,
                 look_at,
-                vect!(0,1,0),
+                vect!(0, 1, 0),
                 20.,
                 ASPECT_RATIO,
                 APERTURE,
                 dist_to_focus,
                 0.0,
-                1.0);
+                1.0,
+            );
             world = Arc::new(two_spheres());
             matches
-        },
+        }
         Some(("two_perlin_spheres", matches)) => {
             // we need to change the camera as well as populate a different world
             look_from = vect!(13, 2, 3);
@@ -303,17 +306,17 @@ fn main() {
             camera = Camera::new(
                 look_from,
                 look_at,
-                vect!(0,1,0),
+                vect!(0, 1, 0),
                 20.,
                 ASPECT_RATIO,
                 APERTURE,
                 dist_to_focus,
                 0.0,
-                1.0);
+                1.0,
+            );
             world = Arc::new(two_perlin_spheres());
             matches
-
-        },
+        }
         Some(("earth_scene", matches)) => {
             look_from = vect!(13, 2, 3);
             look_at = vect!(0, 0, 0);
@@ -322,16 +325,17 @@ fn main() {
             camera = Camera::new(
                 look_from,
                 look_at,
-                vect!(0,1,0),
+                vect!(0, 1, 0),
                 20.,
                 ASPECT_RATIO,
                 APERTURE,
                 dist_to_focus,
                 0.0,
-                1.0);
+                1.0,
+            );
             world = Arc::new(earth_scene());
             matches
-        },
+        }
         Some(("simple_light_scene", matches)) => {
             // we need to change the camera as well as populate a different world
             look_from = vect!(25, 2, 2);
@@ -342,16 +346,17 @@ fn main() {
             camera = Camera::new(
                 look_from,
                 look_at,
-                vect!(0,1,0),
+                vect!(0, 1, 0),
                 30.,
                 ASPECT_RATIO,
                 APERTURE,
                 dist_to_focus,
                 0.0,
-                1.0);
+                1.0,
+            );
             world = Arc::new(simple_light_scene());
             matches
-        },
+        }
         Some(("cornell_box", matches)) => {
             look_from = vect!(278, 273, -800);
             look_at = vect!(278, 273, 0);
@@ -361,16 +366,17 @@ fn main() {
             camera = Camera::new(
                 look_from,
                 look_at,
-                vect!(0,1,0),
+                vect!(0, 1, 0),
                 40.,
                 ASPECT_RATIO,
                 APERTURE,
                 dist_to_focus,
                 0.0,
-                1.0);
+                1.0,
+            );
             world = Arc::new(cornell_box());
             matches
-        },
+        }
         Some(("cornell_smoke", matches)) => {
             look_from = vect!(278, 273, -800);
             look_at = vect!(278, 273, 0);
@@ -380,16 +386,17 @@ fn main() {
             camera = Camera::new(
                 look_from,
                 look_at,
-                vect!(0,1,0),
+                vect!(0, 1, 0),
                 40.,
                 ASPECT_RATIO,
                 APERTURE,
                 dist_to_focus,
                 0.0,
-                1.0);
+                1.0,
+            );
             world = Arc::new(cornell_smoke());
             matches
-        },
+        }
         Some(("final_scene", matches)) => {
             look_from = vect!(450, 270, -380);
             look_at = vect!(280, 280, 50);
@@ -401,16 +408,17 @@ fn main() {
             camera = Camera::new(
                 look_from,
                 look_at,
-                vect!(0,1,0),
+                vect!(0, 1, 0),
                 50.,
                 1.0,
                 APERTURE,
                 dist_to_focus,
                 0.0,
-                1.0);
+                1.0,
+            );
             world = Arc::new(final_scene());
             matches
-        },
+        }
         Some(("million_spheres", matches)) => {
             look_from = vect!(150, 2, 2);
             look_at = vect!(0, 0, 0);
@@ -420,16 +428,17 @@ fn main() {
             camera = Camera::new(
                 look_from,
                 look_at,
-                vect!(0,1,0),
+                vect!(0, 1, 0),
                 40.,
                 ASPECT_RATIO,
                 APERTURE,
                 dist_to_focus,
                 0.0,
-                0.0);
-            world = Arc::new(one_million_ants_er_spheres( &mut rng));
+                0.0,
+            );
+            world = Arc::new(one_million_ants_er_spheres(&mut rng));
             matches
-        },
+        }
         _ => unreachable!("clap should ensure we don't get here"),
     };
     //eprintln!("first get_matches {:?}", matches);
@@ -440,9 +449,8 @@ fn main() {
     let interior_light = interior_light;
 
     let mut bvh = Bvh::new();
-    bvh.add_hitlist(& mut world, start_time_in_sec, stop_time_in_sec);
+    bvh.add_hitlist(&mut world, start_time_in_sec, stop_time_in_sec);
     let world = Arc::new(bvh.build());
-
 
     // Render
     println!("P3\n{} {}\n255", IMAGE_WIDTH, IMAGE_HEIGHT);

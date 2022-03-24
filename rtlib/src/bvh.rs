@@ -1,8 +1,8 @@
 use crate::aabb::BoundingBox;
 use crate::prelude;
 use prelude::{HitList, HitRecord, Hittable, Ray};
-use std::sync::Arc;
 use rand::Rng;
+use std::sync::Arc;
 
 ///! The BVH starts at the head of the hierarchy, it can't be empty
 ///! as there needs to be some boundary around the scene. From the
@@ -12,7 +12,7 @@ pub type Bvh = BvhNode;
 //type BvhLink = Arc<*mut BvhNode>;
 // The bvhlink will have bvhnodes for most of the tree, but the leaves
 // will be objects. So the pointers are to hittables
-type BvhLink = Arc<Box::<dyn Hittable>>;
+type BvhLink = Arc<Box<dyn Hittable>>;
 
 /// These can potentially be empty, if so their bounding box isn't
 /// meaningful
@@ -33,16 +33,10 @@ impl<'a> BvhNode {
     }
 
     pub fn init_left(&mut self, node: &dyn Hittable) {
-        std::mem::swap(
-            &mut self.p_left,
-            &mut Arc::new(node.box_clone())
-        )
+        std::mem::swap(&mut self.p_left, &mut Arc::new(node.box_clone()))
     }
     pub fn init_right(&mut self, node: &dyn Hittable) {
-        std::mem::swap(
-            &mut self.p_right,
-            &mut Arc::new(node.box_clone()),
-        );
+        std::mem::swap(&mut self.p_right, &mut Arc::new(node.box_clone()));
     }
 
     pub fn left(&self) -> Option<&BvhLink> {
@@ -61,7 +55,7 @@ impl<'a> BvhNode {
         self.clone()
     }
 
-    pub fn add_hitlist(& mut self, hl: & mut Arc<HitList>, t_min: f64, t_max: f64) -> &mut Self {
+    pub fn add_hitlist(&mut self, hl: &mut Arc<HitList>, t_min: f64, t_max: f64) -> &mut Self {
         // first we need to sort the list
         // choose a random axis to partition by
         let axis = Self::rand_axis();
@@ -69,13 +63,24 @@ impl<'a> BvhNode {
         for item in &hl.list {
             self.bb = BoundingBox::expand_to_contain(
                 self.bb.bounding_box(t_min, t_max),
-                item.bounding_box(t_min, t_max)).unwrap_or_default();
+                item.bounding_box(t_min, t_max),
+            )
+            .unwrap_or_default();
         }
-        
+
         match axis {
-            0 => Arc::get_mut(hl).unwrap().list.sort_unstable_by(|a,b| BoundingBox::cmp_by_x(a, b).unwrap()),
-            1 => Arc::get_mut(hl).unwrap().list.sort_unstable_by(|a,b| BoundingBox::cmp_by_y(a, b).unwrap()),
-            2..=u8::MAX => Arc::get_mut(hl).unwrap().list.sort_unstable_by(|a,b| BoundingBox::cmp_by_z(a, b).unwrap()),
+            0 => Arc::get_mut(hl)
+                .unwrap()
+                .list
+                .sort_unstable_by(|a, b| BoundingBox::cmp_by_x(a, b).unwrap()),
+            1 => Arc::get_mut(hl)
+                .unwrap()
+                .list
+                .sort_unstable_by(|a, b| BoundingBox::cmp_by_y(a, b).unwrap()),
+            2..=u8::MAX => Arc::get_mut(hl)
+                .unwrap()
+                .list
+                .sort_unstable_by(|a, b| BoundingBox::cmp_by_z(a, b).unwrap()),
         }
 
         if hl.list.len() == 1 {
@@ -85,21 +90,20 @@ impl<'a> BvhNode {
             // then, one for each side
             self.p_left = Arc::new(hl.list[0].box_clone());
             self.p_right = Arc::new(hl.list[1].box_clone());
-        }
-        else {
+        } else {
             // we have a few things, we'll split and give 1/2 to each side
             let mut left_node = BvhNode::new();
             let mut right_node = BvhNode::new();
-            let (left_list, right_list) = hl.list.split_at(hl.list.len()/2);
+            let (left_list, right_list) = hl.list.split_at(hl.list.len() / 2);
             let mut left_hl = HitList::new();
-            left_hl.list=left_list.to_vec();
+            left_hl.list = left_list.to_vec();
             let mut right_hl = HitList::new();
-            right_hl.list=right_list.to_vec();
+            right_hl.list = right_list.to_vec();
             let left_hl = left_hl;
             let right_hl = right_hl;
-            
-            left_node.add_hitlist(& mut Arc::new(left_hl), t_min, t_max);
-            right_node.add_hitlist(& mut Arc::new(right_hl), t_min, t_max);
+
+            left_node.add_hitlist(&mut Arc::new(left_hl), t_min, t_max);
+            right_node.add_hitlist(&mut Arc::new(right_hl), t_min, t_max);
             self.p_left = Arc::new(Box::from(left_node));
             self.p_right = Arc::new(Box::from(right_node));
         }
@@ -168,34 +172,24 @@ impl<'a> Hittable for Bvh {
 
 mod test {
     #[allow(unused_imports)]
-    use crate::util::{random_scene};
-    #[allow(unused_imports)]
     use super::super::color_to_texture;
-    #[allow(unused_imports)]
-    use crate::prelude::BvhNode;
-    #[allow(unused_imports)]
-    use rand::Rng;
-    #[allow(unused_imports)]
-    use crate::prelude::{
-        BoundingBox,
-        Sphere,
-        HitList,
-        Point3,
-        Vec3,
-        MaterialType,
-        Lambertian,
-        Color,
-        Ray,
-        HitRecord,
-        Hitters,
-        Bvh,
-    };
-    #[allow(unused_imports)]
-    use crate::prelude::Hittable;
     #[allow(unused_imports)]
     use super::super::vect;
     #[allow(unused_imports)]
     use crate::aabb::AabbF;
+    #[allow(unused_imports)]
+    use crate::prelude::BvhNode;
+    #[allow(unused_imports)]
+    use crate::prelude::Hittable;
+    #[allow(unused_imports)]
+    use crate::prelude::{
+        BoundingBox, Bvh, Color, HitList, HitRecord, Hitters, Lambertian, MaterialType, Point3,
+        Ray, Sphere, Vec3,
+    };
+    #[allow(unused_imports)]
+    use crate::util::random_scene;
+    #[allow(unused_imports)]
+    use rand::Rng;
 
     #[test]
     fn test_build_bvh() {
@@ -203,9 +197,12 @@ mod test {
         let mut world = std::sync::Arc::new(random_scene(&mut rng, false, false));
 
         let mut bvh = BvhNode::default();
-        bvh.add_hitlist(& mut world, 0., 0.);
+        bvh.add_hitlist(&mut world, 0., 0.);
 
-        assert_ne!(bvh.bb.bounding_box(0., 0.), BoundingBox::default().bounding_box(0., 0.));
+        assert_ne!(
+            bvh.bb.bounding_box(0., 0.),
+            BoundingBox::default().bounding_box(0., 0.)
+        );
         // shows that it's empty, as it should be. Was just for visual verification
         // println!("The default Bounding box looks like: {}", BoundingBox::default());
         // Spent some time looking at this results were
@@ -221,12 +218,12 @@ mod test {
         bb.minimum = vect!(-1000, -2000, -1000);
         bb.maximum = vect!(1000, 2, 1000);
         let bb = BoundingBox::AabbF(bb);
-        assert_eq!(bvh.bounding_box(0., 0.), bb.bounding_box(0., 0.)); 
+        assert_eq!(bvh.bounding_box(0., 0.), bb.bounding_box(0., 0.));
     }
 
     #[test]
     fn test_hit_bvh() {
-       // taken from test_sphere_hit
+        // taken from test_sphere_hit
         let pt1 = Point3::new(0.0, 0.0, 0.0);
         let pt2 = Point3::new(1.0, 1.0, 1.0);
         let l = MaterialType::Lambertian(Lambertian::new(&color_to_texture!(&Color::new(
@@ -267,16 +264,18 @@ mod test {
         hl.add(Hitters::Sphere(s3));
 
         let mut bvh = Bvh::new();
-        bvh.add_hitlist(& mut std::sync::Arc::new(hl), 0., 0.);
+        bvh.add_hitlist(&mut std::sync::Arc::new(hl), 0., 0.);
         bvh.build();
         let hit_or_not = bvh.hit(&r, 0., 0.);
         // this should have 2 hits, but we'll return the closest one
         if hit_or_not.is_some() {
-            println!("the result front_face: {}", hit_or_not.as_ref().unwrap().front_face);
+            println!(
+                "the result front_face: {}",
+                hit_or_not.as_ref().unwrap().front_face
+            );
             assert_eq!(hit_or_not.as_ref().unwrap().t, hitrec.t);
             println!("the result: {}", hit_or_not.as_ref().unwrap());
         }
         //println!("the result front_face: {}", result.material);
-
     }
 }

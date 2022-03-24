@@ -1,7 +1,7 @@
-use rand::Rng;
-use math::round;
 use super::vec3::{self, Vec3};
 use super::vect;
+use math::round;
+use rand::Rng;
 
 const MAX_PERLIN_PERM: usize = 256;
 
@@ -11,16 +11,13 @@ pub struct Perlin {
     perm_x: Box<[i64]>,
     perm_y: Box<[i64]>,
     perm_z: Box<[i64]>,
-
-
 }
 
 // Perlin should be read only after construction
-unsafe impl Send for Perlin{}
-unsafe impl Sync for Perlin{}
+unsafe impl Send for Perlin {}
+unsafe impl Sync for Perlin {}
 
 impl Perlin {
-
     pub fn new() -> Self {
         Perlin {
             ranvec: Perlin::perlin_generate(),
@@ -38,16 +35,15 @@ impl Perlin {
         let v: f64 = p.y - j as f64;
         let w: f64 = p.z - k as f64;
 
-
         let mut c: [[[Vec3; 2]; 2]; 2] = [[[Vec3::default(); 2]; 2]; 2];
 
         for di in 0..c.len() {
             for dj in 0..c[0].len() {
                 for dk in 0..c[0][0].len() {
-                    c[di][dj][dk] = self.ranvec[(
-                          self.perm_x[((i+di as i64) & 255) as usize]
-                        ^ self.perm_y[((j+dj as i64) & 255) as usize]
-                        ^ self.perm_z[((k+dk as i64) & 255) as usize]) as usize];
+                    c[di][dj][dk] = self.ranvec[(self.perm_x[((i + di as i64) & 255) as usize]
+                        ^ self.perm_y[((j + dj as i64) & 255) as usize]
+                        ^ self.perm_z[((k + dk as i64) & 255) as usize])
+                        as usize];
                 }
             }
         }
@@ -60,20 +56,20 @@ impl Perlin {
         let mut rng = rand::thread_rng();
 
         for _i in 0..MAX_PERLIN_PERM {
-            p.push( vec3::unit_vector(&vect!(
-                        -1. + 2. * rng.gen::<f64>(),
-                        -1. + 2. * rng.gen::<f64>(),
-                        -1. + 2. * rng.gen::<f64>()
-                        )));
+            p.push(vec3::unit_vector(&vect!(
+                -1. + 2. * rng.gen::<f64>(),
+                -1. + 2. * rng.gen::<f64>(),
+                -1. + 2. * rng.gen::<f64>()
+            )));
         }
 
         p.into_boxed_slice()
     }
 
-    pub fn permute(p: & mut Vec<i64>) {
+    pub fn permute(p: &mut Vec<i64>) {
         let mut rng = rand::thread_rng();
-        for i in (0..(p.len()-1)).rev() {
-            let target: usize = (rng.gen::<f64>() * ((i+1) as f64)) as usize;
+        for i in (0..(p.len() - 1)).rev() {
+            let target: usize = (rng.gen::<f64>() * ((i + 1) as f64)) as usize;
             p.swap(i, target);
         }
     }
@@ -84,7 +80,7 @@ impl Perlin {
         for i in 0..MAX_PERLIN_PERM {
             p.push(i as i64);
         }
-        Self::permute(& mut p);
+        Self::permute(&mut p);
         p.into_boxed_slice()
     }
 
@@ -99,7 +95,6 @@ impl Perlin {
         }
         accum.abs()
     }
-
 }
 
 impl Default for Perlin {
@@ -108,7 +103,6 @@ impl Default for Perlin {
     }
 }
 
-
 // this may have in fact become perlin_interp rather than the trilinear it used to be.
 pub fn trilinear_interp(c: &[[[Vec3; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 {
     let mut accum: f64 = 0.;
@@ -116,28 +110,25 @@ pub fn trilinear_interp(c: &[[[Vec3; 2]; 2]; 2], u: f64, v: f64, w: f64) -> f64 
     let vv: f64 = v * v * (3. - 2. * v);
     let ww: f64 = w * w * (3. - 2. * w);
     for i in 0..c.len() {
-       for j in 0..c[0].len() {
+        for j in 0..c[0].len() {
             for k in 0..c[0][0].len() {
-                let weight_v: Vec3 = vect!(u - i as f64,
-                                           v - j as f64,
-                                           w - k as f64);
-                accum += 
-                    (i as f64 * uu + (1.0 - i as f64)*(1.0 - uu )) *
-                    (j as f64 * vv + (1.0 - j as f64)*(1.0 - vv )) *
-                    (k as f64 * ww + (1.0 - k as f64)*(1.0 - ww )) *
-                    vec3::dot(&c[i][j][k], &weight_v);
+                let weight_v: Vec3 = vect!(u - i as f64, v - j as f64, w - k as f64);
+                accum += (i as f64 * uu + (1.0 - i as f64) * (1.0 - uu))
+                    * (j as f64 * vv + (1.0 - j as f64) * (1.0 - vv))
+                    * (k as f64 * ww + (1.0 - k as f64) * (1.0 - ww))
+                    * vec3::dot(&c[i][j][k], &weight_v);
             }
-       } 
+        }
     }
     accum
 }
 
 #[cfg(test)]
 mod test {
-#[allow(unused_imports)]
-use rand::Rng;
-#[allow(unused_imports)]
-use super::Perlin;
+    #[allow(unused_imports)]
+    use super::Perlin;
+    #[allow(unused_imports)]
+    use rand::Rng;
 
     #[test]
     fn test_permute() {
@@ -149,7 +140,7 @@ use super::Perlin;
 
         let mut perm_bxslice = bxslice.clone();
 
-        Perlin::permute(& mut perm_bxslice);
+        Perlin::permute(&mut perm_bxslice);
 
         assert_ne!(bxslice, perm_bxslice);
     }

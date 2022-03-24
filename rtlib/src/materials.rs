@@ -11,7 +11,9 @@ pub trait Material {
     fn albedo(&self) -> TextureType;
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result;
     fn box_clone(&self) -> Box<MaterialType>;
-    fn emitted(&self, _u: f64, _v: f64, _p: &Vec3) -> Color { vect!(0,0,0) }// return black as default
+    fn emitted(&self, _u: f64, _v: f64, _p: &Vec3) -> Color {
+        vect!(0, 0, 0)
+    } // return black as default
 }
 
 #[derive(Clone)]
@@ -111,11 +113,11 @@ impl Material for MaterialType {
 
     fn emitted(&self, u: f64, v: f64, p: &Vec3) -> Color {
         match self {
-            MaterialType::Lambertian(innertype) => return innertype.emitted(u,v,p),
-            MaterialType::Dielectric(innertype) => return innertype.emitted(u,v,p),
-            MaterialType::Metal(innertype) => return innertype.emitted(u,v,p),
-            MaterialType::DiffuseLight(innertype) => return innertype.emitted(u,v,p),
-            MaterialType::Nothing(innertype) => innertype.emitted(u,v,p),
+            MaterialType::Lambertian(innertype) => return innertype.emitted(u, v, p),
+            MaterialType::Dielectric(innertype) => return innertype.emitted(u, v, p),
+            MaterialType::Metal(innertype) => return innertype.emitted(u, v, p),
+            MaterialType::DiffuseLight(innertype) => return innertype.emitted(u, v, p),
+            MaterialType::Nothing(innertype) => innertype.emitted(u, v, p),
         }
     }
 }
@@ -160,7 +162,9 @@ pub struct Lambertian {
 impl Lambertian {
     #[allow(dead_code)]
     pub fn new(texture: &TextureType) -> Self {
-        Lambertian { albedo: texture.clone() }
+        Lambertian {
+            albedo: texture.clone(),
+        }
     }
 }
 
@@ -171,10 +175,7 @@ impl Material for Lambertian {
         //let attenuation = self.albedo.value(0.0, 0.0, &rec.p);
         let u: f64 = rec.texture_coord.unwrap_or(TextureCoord::default()).u;
         let v: f64 = rec.texture_coord.unwrap_or(TextureCoord::default()).v;
-        let attenuation = self.albedo.value(
-            u,
-            v,
-            &rec.p);
+        let attenuation = self.albedo.value(u, v, &rec.p);
         return Some((attenuation, scattered));
     }
 
@@ -321,9 +322,7 @@ pub struct DiffuseLight {
 impl DiffuseLight {
     // NOTE: Default fuzz is 1
     pub fn new(a: TextureType) -> Self {
-        DiffuseLight {
-            albedo: a,
-        }
+        DiffuseLight { albedo: a }
     }
 }
 
@@ -351,7 +350,6 @@ impl Material for DiffuseLight {
 }
 mat_display!(DiffuseLight);
 
-
 pub fn schlick(cosine: f64, refractive_index: f64) -> f64 {
     let mut r0: f64 = (1.0 - refractive_index) / (1.0 + refractive_index);
     r0 = r0 * r0;
@@ -360,30 +358,23 @@ pub fn schlick(cosine: f64, refractive_index: f64) -> f64 {
 
 #[cfg(test)]
 mod test {
+    use super::super::color_to_texture;
     #[allow(unused_imports)]
-    use super::{
-        Material,
-        NoneMaterial,
-        MaterialType,
-        DiffuseLight,
-        Color,
-    };
-    use super::super::{color_to_texture};
+    use super::{Color, DiffuseLight, Material, MaterialType, NoneMaterial};
     use crate::vect;
-
 
     #[test]
     fn test_base_material() {
         let mat = MaterialType::Nothing(NoneMaterial::default());
-        let ans_color = vect!(0,0,0);
+        let ans_color = vect!(0, 0, 0);
 
-        assert_eq!(mat.emitted(0., 0., &vect!(1,2,3)), ans_color);
+        assert_eq!(mat.emitted(0., 0., &vect!(1, 2, 3)), ans_color);
     }
 
     #[test]
     fn test_diffuse_light() {
         let light_color = Color::new(1.0, 0.5, 0.2);
-        let light = DiffuseLight::new(color_to_texture!(&light_color));    
+        let light = DiffuseLight::new(color_to_texture!(&light_color));
         let result = light.emitted(0.0, 0.0, &light_color);
 
         assert_eq!(result, light_color);

@@ -26,8 +26,11 @@ impl Sphere {
     }
 
     pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Sphere: center: {} radius: {}, material: {}",
-               &self.center, &self.radius, &self.material)
+        write!(
+            f,
+            "Sphere: center: {} radius: {}, material: {}",
+            &self.center, &self.radius, &self.material
+        )
     }
 }
 
@@ -54,9 +57,7 @@ impl Hittable for Sphere {
                     // a unit sphere centered on the origin. So, we'll
                     // do that. Note, it's the same as the "normal"
                     // above.
-                    texture_coord: Some(uv_for_sphere(
-                            &((pat - self.center) / self.radius))
-                        ),
+                    texture_coord: Some(uv_for_sphere(&((pat - self.center) / self.radius))),
                 });
                 return rec;
             }
@@ -72,9 +73,7 @@ impl Hittable for Sphere {
                     // the u,v coord computation assumes that it has
                     // a unit sphere centered on the origin. So, we'll
                     // do that.
-                    texture_coord: Some(uv_for_sphere(
-                            &((pat - self.center) / self.radius))
-                        ),
+                    texture_coord: Some(uv_for_sphere(&((pat - self.center) / self.radius))),
                 });
                 return rec;
             }
@@ -97,7 +96,6 @@ impl Hittable for Sphere {
         self.inner_fmt(f)
     }
 }
-
 
 #[allow(unused_imports, dead_code)]
 #[derive(Default, Clone)]
@@ -132,14 +130,9 @@ impl MovingSphere {
         write!(
             f,
             "MovingSphere: center0: {} center1: {} time0: {} time1: {} radius: {}, material: {}",
-            &self.center0,
-            &self.center1,
-            &self.time0,
-            &self.time1,
-            &self.radius,
-            &self.material)
+            &self.center0, &self.center1, &self.time0, &self.time1, &self.radius, &self.material
+        )
     }
-
 }
 
 impl Hittable for MovingSphere {
@@ -236,9 +229,9 @@ mod test {
     use crate::sphere::Sphere;
     #[allow(unused_imports)]
     use crate::textures::ConstantTexture;
+    use crate::util;
     #[allow(unused_imports)]
     use crate::vec3::{Color, Point3, Vec3};
-    use crate::util;
 
     #[test]
     fn test_sphere_hit() {
@@ -252,9 +245,9 @@ mod test {
         let radius = 3.0;
         let s = Sphere::new(&center, radius, l.clone());
         let pat = Vec3 {
-                x: 0.26794919243112264,
-                y: 0.26794919243112264,
-                z: 0.26794919243112264,
+            x: 0.26794919243112264,
+            y: 0.26794919243112264,
+            z: 0.26794919243112264,
         };
         let hitrec = HitRecord {
             t: 0.26794919243112264,

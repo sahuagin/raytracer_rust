@@ -7,7 +7,7 @@ use crate::util::{ffmax, ffmin};
 ///
 ///
 use crate::vec3::Vec3;
-use std::{mem, cmp::Ordering};
+use std::{cmp::Ordering, mem};
 
 #[derive(Clone, Copy, Debug)]
 pub enum BoundingBox {
@@ -79,26 +79,22 @@ impl BoundingBox {
         }
     }
 
-    pub fn cmp_by_x(lhs: & dyn Hittable, rhs: & dyn Hittable) -> Option<Ordering> {
+    pub fn cmp_by_x(lhs: &dyn Hittable, rhs: &dyn Hittable) -> Option<Ordering> {
         let box_left = lhs.bounding_box(0., 0.);
         let box_right = rhs.bounding_box(0., 0.);
 
         if box_left.is_some() {
             if box_right.is_some() {
-                return (box_left.unwrap().min().x -
-                             box_right.unwrap().min().x).partial_cmp(&0.0);
-            }
-            else {
+                return (box_left.unwrap().min().x - box_right.unwrap().min().x).partial_cmp(&0.0);
+            } else {
                 // have lhs, don't have rhs
                 return Some(Ordering::Greater);
             }
-            
         } else {
             //lhs is None
             if box_right.is_some() {
                 return Some(Ordering::Less);
-            }
-            else {
+            } else {
                 // neither has a value
                 eprintln!("no bounding box in bvhnode compare!");
                 return None;
@@ -106,26 +102,22 @@ impl BoundingBox {
         }
     }
 
-    pub fn cmp_by_y(lhs: & dyn Hittable, rhs: & dyn Hittable) -> Option<Ordering> {
+    pub fn cmp_by_y(lhs: &dyn Hittable, rhs: &dyn Hittable) -> Option<Ordering> {
         let box_left = lhs.bounding_box(0., 0.);
         let box_right = rhs.bounding_box(0., 0.);
 
         if box_left.is_some() {
             if box_right.is_some() {
-                return (box_left.unwrap().min().y -
-                             box_right.unwrap().min().y).partial_cmp(&0.0);
-            }
-            else {
+                return (box_left.unwrap().min().y - box_right.unwrap().min().y).partial_cmp(&0.0);
+            } else {
                 // have lhs, don't have rhs
                 return Some(Ordering::Greater);
             }
-            
         } else {
             //lhs is None
             if box_right.is_some() {
                 return Some(Ordering::Less);
-            }
-            else {
+            } else {
                 // neither has a value
                 eprintln!("no bounding box in bvhnode compare!");
                 return None;
@@ -133,26 +125,22 @@ impl BoundingBox {
         }
     }
 
-    pub fn cmp_by_z(lhs: & dyn Hittable, rhs: & dyn Hittable) -> Option<Ordering> {
+    pub fn cmp_by_z(lhs: &dyn Hittable, rhs: &dyn Hittable) -> Option<Ordering> {
         let box_left = lhs.bounding_box(0., 0.);
         let box_right = rhs.bounding_box(0., 0.);
 
         if box_left.is_some() {
             if box_right.is_some() {
-                return (box_left.unwrap().min().z -
-                             box_right.unwrap().min().z).partial_cmp(&0.0);
-            }
-            else {
+                return (box_left.unwrap().min().z - box_right.unwrap().min().z).partial_cmp(&0.0);
+            } else {
                 // have lhs, don't have rhs
                 return Some(Ordering::Greater);
             }
-            
         } else {
             //lhs is None
             if box_right.is_some() {
                 return Some(Ordering::Less);
-            }
-            else {
+            } else {
                 // neither has a value
                 eprintln!("no bounding box in bvhnode compare!");
                 return None;
@@ -163,21 +151,31 @@ impl BoundingBox {
     pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             BoundingBox::Aabb(x) => {
-                return write!(f, "Aabb::BoundingBox: min(): {} max(): {}", x.min(), x.max());
-            },
+                return write!(
+                    f,
+                    "Aabb::BoundingBox: min(): {} max(): {}",
+                    x.min(),
+                    x.max()
+                );
+            }
             BoundingBox::AabbF(x) => {
-                return write!(f, "AabbF::BoundingBox: min(): {} max(): {}", x.min(), x.max());
-            },
-            _ => { return write!(f, "BoundingBox::Empty is empty.");},
+                return write!(
+                    f,
+                    "AabbF::BoundingBox: min(): {} max(): {}",
+                    x.min(),
+                    x.max()
+                );
+            }
+            _ => {
+                return write!(f, "BoundingBox::Empty is empty.");
+            }
         }
     }
-
-
 }
 
 impl PartialEq for BoundingBox {
     fn eq(&self, other: &Self) -> bool {
-        self.min() == other.min() && self.max() == other.max() 
+        self.min() == other.min() && self.max() == other.max()
     }
 
     fn ne(&self, other: &Self) -> bool {
@@ -264,7 +262,11 @@ impl Aabb {
     }
 
     pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Aabb: minimum: {} maximum: {}", &self.minimum, &self.maximum)
+        write!(
+            f,
+            "Aabb: minimum: {} maximum: {}",
+            &self.minimum, &self.maximum
+        )
     }
 }
 
@@ -277,7 +279,11 @@ impl AabbF {
     }
 
     pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "AabbF: minimum: {} maximum: {}", &self.minimum, &self.maximum)
+        write!(
+            f,
+            "AabbF: minimum: {} maximum: {}",
+            &self.minimum, &self.maximum
+        )
     }
 }
 
@@ -296,7 +302,6 @@ impl AABB for AabbF {
     fn max(&self) -> Vec3 {
         self.maximum
     }
-
 }
 
 impl Hittable for Aabb {
@@ -442,7 +447,7 @@ mod test {
         let hb2 = BoundingBox::default(); // this is also empty
         let hb3 = BoundingBox::Aabb(Aabb::new(vect!(0, 0, 0), vect!(1, 1, 1)));
         let hb4 = BoundingBox::AabbF(AabbF::new(vect!(1, 1, 1), vect!(2, 2, 2)));
-        
+
         // should not compare. may change to equals instead
         assert_eq!(BoundingBox::cmp_by_x(&hb1, &hb1), None);
         assert_eq!(BoundingBox::cmp_by_y(&hb1, &hb1), None);
@@ -474,6 +479,5 @@ mod test {
         // and equal
         assert_eq!(BoundingBox::cmp_by_z(&hb3, &hb3), Some(Ordering::Equal));
         assert_eq!(BoundingBox::cmp_by_z(&hb4, &hb4), Some(Ordering::Equal));
-
     }
 }

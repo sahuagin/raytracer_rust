@@ -2,15 +2,15 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, SamplingMode};
 //use std::time::Instant;
 #[allow(unused_imports)]
-use rtlib::hittable::Hittable;
+use rand::Rng;
+use rtlib;
 use rtlib::hitlist::HitList;
+#[allow(unused_imports)]
+use rtlib::hittable::Hittable;
 #[allow(unused_imports)]
 use rtlib::prelude::Vec3;
 #[allow(unused_imports)]
 use rtlib::ray::Ray;
-#[allow(unused_imports)]
-use rand::Rng;
-use rtlib;
 // how it's done in scopeguard
 //#[macro_use(vect)] extern crate rtmacros;
 // also works?
@@ -22,6 +22,7 @@ use std::{
 
 use rayon::prelude::*;
 
+use rtlib::bvh::Bvh;
 use rtlib::camera::Camera;
 #[allow(unused_imports)]
 use rtlib::materials::{Dielectric, Lambertian, Metal};
@@ -30,8 +31,6 @@ use rtlib::sphere::Sphere;
 #[allow(unused_imports)]
 use rtlib::util::{color, random_scene, write_color};
 use rtlib::vec3::Color;
-use rtlib::bvh::Bvh;
-
 
 fn bench_random_scene_bvh() {
     // For error handling
@@ -65,11 +64,11 @@ fn bench_random_scene_bvh() {
 
     //let mut world = HitList::new();
     // Chapter 12, what next?
-    let start_time_in_sec:f64 = 0.0;
-    let stop_time_in_sec:f64 = 0.0;
+    let start_time_in_sec: f64 = 0.0;
+    let stop_time_in_sec: f64 = 0.0;
     let mut world = Arc::new(random_scene(&mut rng, false, false));
     let mut bvh = Bvh::new();
-    bvh.add_hitlist(& mut world, start_time_in_sec, stop_time_in_sec);
+    bvh.add_hitlist(&mut world, start_time_in_sec, stop_time_in_sec);
     let world = Arc::new(bvh.build());
 
     let camera = Camera::new(
@@ -188,8 +187,8 @@ fn bench_random_scene_no_bvh() {
 
     //let mut world = HitList::new();
     // Chapter 12, what next?
-    let start_time_in_sec:f64 = 0.0;
-    let stop_time_in_sec:f64 = 0.0;
+    let start_time_in_sec: f64 = 0.0;
+    let stop_time_in_sec: f64 = 0.0;
     let world: Arc<HitList>;
     world = Arc::new(random_scene(&mut rng, false, false));
 
@@ -282,7 +281,7 @@ fn bench_bvh_non_bvh(c: &mut Criterion) {
     //group.sampling_mode(SamplingMode::Flat);
     // 7.x minutes for the non-bvh, 2 minutes for the bvh version. ~= 10minutes per run, 10
     //   samples. == 100 minutes or shy of 2 hours to run
-    //reduced the samples per pixel by 100x and depth by 100x, and size by 10x, and 
+    //reduced the samples per pixel by 100x and depth by 100x, and size by 10x, and
     //now it's telling me it runs in picoseconds. So upped depth from 5 to 50 and trying again.
     //group.measurement_time(std::time::Duration::new(7200, 0)).sample_size(10);
     group.sample_size(10);
@@ -294,7 +293,7 @@ fn bench_bvh_non_bvh(c: &mut Criterion) {
                 //let start = Instant::now();
                 black_box(bench_random_scene_no_bvh());
                 //start.elapsed()
-            }) 
+            })
         });
 
         group.bench_function(BenchmarkId::new("Random Scene BVH", i), |b| {

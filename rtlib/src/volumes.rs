@@ -1,13 +1,12 @@
 use crate::{
     aabb::BoundingBox,
-    hittable::{Hittable, HitRecord},
+    hittable::{HitRecord, Hittable},
     materials::MaterialType,
     ray::Ray,
-    util,
-    vect
+    util, vect,
 };
-use std::marker::PhantomData;
 use rand::Rng;
+use std::marker::PhantomData;
 
 #[derive(Clone)]
 pub struct ConstantMedium {
@@ -17,12 +16,11 @@ pub struct ConstantMedium {
 }
 
 impl ConstantMedium {
-    pub fn new(hitit: Box<dyn Hittable>)
-        -> ConstantMediumBuilder<util::Yes, util::No, util::No> {
+    pub fn new(hitit: Box<dyn Hittable>) -> ConstantMediumBuilder<util::Yes, util::No, util::No> {
         ConstantMediumBuilder {
-            boundary_type_set: PhantomData{},
-            density_type_set: PhantomData{},
-            material_type_set: PhantomData{},
+            boundary_type_set: PhantomData {},
+            density_type_set: PhantomData {},
+            material_type_set: PhantomData {},
             boundary: hitit,
             density: f64::default(),
             phase_function: MaterialType::default(),
@@ -33,9 +31,8 @@ impl ConstantMedium {
         write!(
             f,
             "ConstantMedium: boundary: {} density: {}, material: {}",
-            &self.boundary,
-            &self.density,
-            &self.phase_function)
+            &self.boundary, &self.density, &self.phase_function
+        )
     }
 }
 
@@ -46,7 +43,6 @@ where
     CMB_DENSITY_SET: util::ToAssign,
     CMB_MATERIAL_SET: util::ToAssign,
 {
-    
     boundary_type_set: PhantomData<CMB_BOUNDARY_SET>,
     density_type_set: PhantomData<CMB_DENSITY_SET>,
     material_type_set: PhantomData<CMB_MATERIAL_SET>,
@@ -58,50 +54,54 @@ where
 #[allow(non_camel_case_types)]
 impl<CMB_BOUNDARY_SET, CMB_DENSITY_SET, CMB_MATERIAL_SET>
     ConstantMediumBuilder<CMB_BOUNDARY_SET, CMB_DENSITY_SET, CMB_MATERIAL_SET>
-where CMB_BOUNDARY_SET: util::ToAssign,
-      CMB_DENSITY_SET: util::ToAssign,
-      CMB_MATERIAL_SET: util::ToAssign,
+where
+    CMB_BOUNDARY_SET: util::ToAssign,
+    CMB_DENSITY_SET: util::ToAssign,
+    CMB_MATERIAL_SET: util::ToAssign,
 {
-    pub fn with_hittable(self, hitit: Box::<dyn Hittable>)
-        -> ConstantMediumBuilder<util::Yes, CMB_DENSITY_SET, CMB_MATERIAL_SET> {
-            ConstantMediumBuilder {
-                boundary_type_set: PhantomData{},
-                density_type_set: PhantomData{},
-                material_type_set: PhantomData{},
-                boundary: hitit,
-                density: self.density,
-                phase_function: self.phase_function,
-                
-            }
+    pub fn with_hittable(
+        self,
+        hitit: Box<dyn Hittable>,
+    ) -> ConstantMediumBuilder<util::Yes, CMB_DENSITY_SET, CMB_MATERIAL_SET> {
+        ConstantMediumBuilder {
+            boundary_type_set: PhantomData {},
+            density_type_set: PhantomData {},
+            material_type_set: PhantomData {},
+            boundary: hitit,
+            density: self.density,
+            phase_function: self.phase_function,
         }
-    pub fn with_density(self, density: f64)
-        -> ConstantMediumBuilder<CMB_BOUNDARY_SET, util::Yes, CMB_MATERIAL_SET> {
-            ConstantMediumBuilder {
-                boundary_type_set: PhantomData{},
-                density_type_set: PhantomData{},
-                material_type_set: PhantomData{},
-                boundary: self.boundary,
-                density: density,
-                phase_function: self.phase_function,
-            }
+    }
+    pub fn with_density(
+        self,
+        density: f64,
+    ) -> ConstantMediumBuilder<CMB_BOUNDARY_SET, util::Yes, CMB_MATERIAL_SET> {
+        ConstantMediumBuilder {
+            boundary_type_set: PhantomData {},
+            density_type_set: PhantomData {},
+            material_type_set: PhantomData {},
+            boundary: self.boundary,
+            density: density,
+            phase_function: self.phase_function,
         }
+    }
 
-    pub fn with_phase_function(self, mat: MaterialType)
-        -> ConstantMediumBuilder<CMB_BOUNDARY_SET, CMB_DENSITY_SET, util::Yes> {
-            ConstantMediumBuilder {
-                boundary_type_set: PhantomData{},
-                density_type_set: PhantomData{},
-                material_type_set: PhantomData{},
-                boundary: self.boundary,
-                density: self.density,
-                phase_function: mat,
-            }
-
+    pub fn with_phase_function(
+        self,
+        mat: MaterialType,
+    ) -> ConstantMediumBuilder<CMB_BOUNDARY_SET, CMB_DENSITY_SET, util::Yes> {
+        ConstantMediumBuilder {
+            boundary_type_set: PhantomData {},
+            density_type_set: PhantomData {},
+            material_type_set: PhantomData {},
+            boundary: self.boundary,
+            density: self.density,
+            phase_function: mat,
         }
+    }
 }
 
-impl ConstantMediumBuilder<util::Yes, util::Yes, util::Yes>
-{
+impl ConstantMediumBuilder<util::Yes, util::Yes, util::Yes> {
     pub fn build(self) -> ConstantMedium {
         ConstantMedium {
             boundary: self.boundary,
@@ -112,24 +112,31 @@ impl ConstantMediumBuilder<util::Yes, util::Yes, util::Yes>
 }
 
 impl Hittable for ConstantMedium {
-
     fn hit(&self, r: &Ray, tmin: f64, tmax: f64) -> Option<HitRecord> {
         let mut rng = rand::thread_rng();
 
         //let db: bool = rng.gen::<f64>() < 0.00001;
         let db = false;
         if let Some(mut hitrec0) = self.boundary.hit(r, f64::MIN, f64::MAX) {
-            if let Some(mut hitrec1) = self.boundary.hit(r, hitrec0.t+0.0001, f64::MAX){
+            if let Some(mut hitrec1) = self.boundary.hit(r, hitrec0.t + 0.0001, f64::MAX) {
                 if db == true {
                     eprintln!("\nt0 t1  {}  {}", &hitrec0.t, &hitrec1.t);
                 }
-                if hitrec0.t < tmin { hitrec0.t = tmin; }
-                if hitrec1.t > tmax { hitrec1.t = tmax; }
-                if hitrec0.t >= hitrec1.t { return None; }
-                if hitrec0.t < 0. { hitrec0.t = 0.; }
+                if hitrec0.t < tmin {
+                    hitrec0.t = tmin;
+                }
+                if hitrec1.t > tmax {
+                    hitrec1.t = tmax;
+                }
+                if hitrec0.t >= hitrec1.t {
+                    return None;
+                }
+                if hitrec0.t < 0. {
+                    hitrec0.t = 0.;
+                }
                 let distance_inside_boundary: f64 =
                     (hitrec1.t - hitrec0.t) * r.direction().length();
-                let hit_distance: f64 = -1.*(1./self.density) * rng.gen::<f64>().log(10.);
+                let hit_distance: f64 = -1. * (1. / self.density) * rng.gen::<f64>().log(10.);
                 if hit_distance < distance_inside_boundary {
                     if db == true {
                         eprintln!("hit_distance = {}", &hit_distance);
@@ -144,12 +151,18 @@ impl Hittable for ConstantMedium {
                     }
                     let normal = vect!(1, 0, 0); // arbitrary
                     let mat = self.phase_function.clone();
-                    let mut retval = HitRecord::new( p, t, mat);
+                    let mut retval = HitRecord::new(p, t, mat);
                     retval.normal = normal;
                     return Some(retval);
-                } else {return None;}
-            } else {return None;}
-        } else {return None;};
+                } else {
+                    return None;
+                }
+            } else {
+                return None;
+            }
+        } else {
+            return None;
+        };
     }
 
     fn box_clone<'a>(&self) -> Box<dyn Hittable> {
@@ -167,23 +180,24 @@ impl Hittable for ConstantMedium {
 
 #[cfg(test)]
 mod test {
-    use super::{ConstantMedium};
-    use crate::hittable::{Hittable};
+    use super::ConstantMedium;
+    use crate::hittable::Hittable;
+    use crate::materials::{Dielectric, Lambertian, MaterialType};
     use crate::sphere::Sphere;
-    use crate::vect;
-    use crate::materials::{Lambertian, MaterialType, Dielectric};
     use crate::textures::{NoiseTexture, TextureType};
-
+    use crate::vect;
 
     #[test]
     fn test_constant_medium_construction() {
         let noise = TextureType::NoiseTexture(NoiseTexture::new());
         let text = MaterialType::Lambertian(Lambertian::new(&noise));
-        let cm = ConstantMedium::new(Sphere::new(&vect!(1,2,3), 4.0, text).box_clone());
-        let cm = cm.with_phase_function(MaterialType::Dielectric(Dielectric::new(&vect!(1.5, 0.2, 0.3), 0.3)));
+        let cm = ConstantMedium::new(Sphere::new(&vect!(1, 2, 3), 4.0, text).box_clone());
+        let cm = cm.with_phase_function(MaterialType::Dielectric(Dielectric::new(
+            &vect!(1.5, 0.2, 0.3),
+            0.3,
+        )));
         let cm = cm.with_density(30.0).build();
 
         assert_eq!(cm.density, 30.);
-
     }
 }

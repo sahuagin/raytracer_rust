@@ -5,10 +5,10 @@ use super::hitlist::HitList;
 #[allow(unused_imports)]
 use super::materials::{Material, MaterialType};
 use super::ray::Ray;
-use super::sphere::{MovingSphere, Sphere};
 use super::rectangle::Rect;
+use super::sphere::{MovingSphere, Sphere};
 use super::vec3::{Point3, Vec3};
-use std::{fmt, cmp::PartialEq};
+use std::{cmp::PartialEq, fmt};
 
 #[allow(unused_imports, dead_code)]
 pub trait Hittable {
@@ -69,9 +69,7 @@ impl Hittable for Hitters {
             Hitters::Custom(x) => x.hitter_fmt(f),
             Hitters::Nothing(_x) => write!(f, "Hitter::Nothing"),
         }
-
     }
-
 }
 
 impl std::fmt::Display for Hitters {
@@ -79,7 +77,6 @@ impl std::fmt::Display for Hitters {
         self.hitter_fmt(f)
     }
 }
-
 
 // create a tuple struct. The hittable will be at self.0
 #[derive(Clone)]
@@ -100,7 +97,10 @@ impl Hittable for FlipNormal {
     fn hit(&self, r: &Ray, tmin: f64, tmax: f64) -> Option<HitRecord> {
         let hr = self.0.hit(r, tmin, tmax);
         match hr {
-            Some(mut x) => { x.normal *= -1.0; Some(x) },
+            Some(mut x) => {
+                x.normal *= -1.0;
+                Some(x)
+            }
             None => None,
         }
     }
@@ -116,7 +116,6 @@ impl Hittable for FlipNormal {
     fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         self.0.hitter_fmt(f)
     }
-
 }
 
 #[derive(Clone)]
@@ -151,7 +150,6 @@ impl Hittable for Custom {
     }
 }
 
-
 #[derive(Clone, Copy, Default)]
 pub struct NoBatter;
 impl Hittable for NoBatter {
@@ -172,7 +170,6 @@ impl Hittable for NoBatter {
     }
 }
 
-
 unsafe impl Send for Hitters {}
 unsafe impl Sync for Hitters {}
 
@@ -192,19 +189,18 @@ pub enum Hitters {
     Nothing(NoBatter),
 }
 
-
 #[allow(unused_imports, dead_code)]
 #[derive(Clone, Copy, Debug, Default)]
-pub struct TextureCoord {pub u: f64, pub v: f64}
+pub struct TextureCoord {
+    pub u: f64,
+    pub v: f64,
+}
 
-impl PartialEq for TextureCoord
-{
+impl PartialEq for TextureCoord {
     fn eq(&self, other: &Self) -> bool {
         //eprintln!("TextureCoord::PartialEq({}, {})", &self, &other);
         let my_epsilon: f64 = 0.0001_f64;
-        if (self.u - other.u).abs() < my_epsilon &&
-        (self.v - other.v).abs() < my_epsilon
-        {
+        if (self.u - other.u).abs() < my_epsilon && (self.v - other.v).abs() < my_epsilon {
             return true;
         }
         false
@@ -236,7 +232,10 @@ impl HitRecord {
             normal: p,
             material,
             t,
-            texture_coord: Some(TextureCoord{u: f64::default(), v: f64::default()}),
+            texture_coord: Some(TextureCoord {
+                u: f64::default(),
+                v: f64::default(),
+            }),
             front_face: false,
         }
     }
@@ -261,12 +260,10 @@ impl fmt::Debug for HitRecord {
             .field("texture_coord", &self.texture_coord)
             .field("front_face", &self.front_face)
             .finish()
-
     }
 }
 
-impl PartialEq for HitRecord
-{
+impl PartialEq for HitRecord {
     fn eq(&self, other: &Self) -> bool {
         if self.t == other.t &&
            self.p == other.p &&
@@ -274,11 +271,11 @@ impl PartialEq for HitRecord
            //self.material == other.material &&
            self.texture_coord.unwrap_or_default() ==
                 other.texture_coord.unwrap_or_default() &&
-           self.front_face == other.front_face {
-                return true;
-           }
+           self.front_face == other.front_face
+        {
+            return true;
+        }
         false
-
     }
 }
 
@@ -294,7 +291,6 @@ impl std::fmt::Display for Box<dyn Hittable> {
     }
 }
 
-
 impl std::fmt::Display for HitRecord {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -309,45 +305,41 @@ impl std::fmt::Display for HitRecord {
 
 #[cfg(test)]
 mod test {
-    use crate::ray::Ray;
-    use crate::vect;
     use super::{FlipNormal, HitRecord, Hittable, TextureCoord};
-    use crate::materials::{MaterialType, DiffuseLight};
-    use crate::textures::{TextureType, ConstantTexture};
+    use crate::materials::{DiffuseLight, MaterialType};
+    use crate::ray::Ray;
     use crate::rectangle::{Axis, Rect};
+    use crate::textures::{ConstantTexture, TextureType};
+    use crate::vect;
 
     #[test]
     fn test_flip_normal_create() {
         let yzrect = Rect::new(
-            -1.0, 1.0, -1.0, 1.0, 0.0,
-            &MaterialType::DiffuseLight(
-                DiffuseLight::new(
-                    TextureType::ConstantTexture(
-                        ConstantTexture::new(&vect!(4,4,4))
-                    )
-                )
-            ),
-        Axis::X);
+            -1.0,
+            1.0,
+            -1.0,
+            1.0,
+            0.0,
+            &MaterialType::DiffuseLight(DiffuseLight::new(TextureType::ConstantTexture(
+                ConstantTexture::new(&vect!(4, 4, 4)),
+            ))),
+            Axis::X,
+        );
 
-        let r = Ray::new(
-            &vect!(1, 0, 0),
-            &vect!(-1, 0, 0),
-            None
-            );
+        let r = Ray::new(&vect!(1, 0, 0), &vect!(-1, 0, 0), None);
 
         let mut hr_ans = HitRecord::new(
             vect!(0, 0, 0),
             1.0,
-            MaterialType::DiffuseLight(
-                DiffuseLight::new(
-                    TextureType::ConstantTexture(
-                        ConstantTexture::new(&vect!(4,4,4))))));
-        hr_ans.normal = vect!(1,0,0);
-        hr_ans.texture_coord = Some(TextureCoord{u: 0.5, v: 0.5});
-
+            MaterialType::DiffuseLight(DiffuseLight::new(TextureType::ConstantTexture(
+                ConstantTexture::new(&vect!(4, 4, 4)),
+            ))),
+        );
+        hr_ans.normal = vect!(1, 0, 0);
+        hr_ans.texture_coord = Some(TextureCoord { u: 0.5, v: 0.5 });
 
         let hr = yzrect.hit(&r, 0.0, 1.0);
-        
+
         let flipnorm = FlipNormal::new(&yzrect.box_clone());
         let flipped_hr = flipnorm.hit(&r, 0.0, 1.0);
 

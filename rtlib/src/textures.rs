@@ -1,10 +1,11 @@
-use super::vec3::{Color, Vec3};
 use super::perlin::Perlin;
 use super::util::{self, Image};
+use super::vec3::{Color, Vec3};
 use super::vect;
 use std::marker::PhantomData;
 
-pub trait Texture { fn value(&self, u: f64, v: f64, p: &Vec3) -> Color;
+pub trait Texture {
+    fn value(&self, u: f64, v: f64, p: &Vec3) -> Color;
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result;
     fn albedo(&self) -> TextureType;
     fn box_clone(&self) -> Box<dyn Texture>;
@@ -50,8 +51,8 @@ pub enum TextureType {
     Nothing(NoneTexture),
 }
 
-unsafe impl Sync for TextureType{}
-unsafe impl Send for TextureType{}
+unsafe impl Sync for TextureType {}
+unsafe impl Send for TextureType {}
 
 impl Texture for TextureType {
     fn value(&self, u: f64, v: f64, p: &Vec3) -> Color {
@@ -91,7 +92,6 @@ impl std::fmt::Display for TextureType {
         self.inner_fmt(f)
     }
 }
-
 
 impl Clone for Box<dyn Texture> {
     fn clone(&self) -> Box<dyn Texture> {
@@ -146,7 +146,7 @@ impl CheckerTexture {
 impl Texture for CheckerTexture {
     fn value(&self, u: f64, v: f64, p: &Vec3) -> Color {
         let mult = 10.0;
-        let sines = (mult * p.x).sin() * (mult*p.y).sin() * (mult*p.z).sin();
+        let sines = (mult * p.x).sin() * (mult * p.y).sin() * (mult * p.z).sin();
         if sines < 0. {
             return self.odd.value(u, v, p);
         } else {
@@ -156,7 +156,7 @@ impl Texture for CheckerTexture {
     }
 
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Checker: odd: {} even: {}", self.odd, self.even )
+        write!(f, "Checker: odd: {} even: {}", self.odd, self.even)
     }
 
     fn albedo(&self) -> TextureType {
@@ -166,7 +166,6 @@ impl Texture for CheckerTexture {
     fn box_clone(&self) -> Box<dyn Texture> {
         Box::new(self.clone())
     }
-    
 }
 
 #[derive(Clone, Default)]
@@ -176,7 +175,6 @@ pub struct NoiseTexture {
 }
 
 impl NoiseTexture {
-
     pub fn new() -> Self {
         NoiseTexture {
             inner_noise: Perlin::new(),
@@ -188,7 +186,7 @@ impl NoiseTexture {
         self.inner_noise.noise(&p)
     }
 
-    pub fn scale(mut self, sc: f64 ) -> Self {
+    pub fn scale(mut self, sc: f64) -> Self {
         self.scale = Some(sc);
         self
     }
@@ -206,7 +204,12 @@ impl Texture for NoiseTexture {
         // two perlin spheres
         //vect!(1,1,1) * 0.5 * (1.0 + (self.scale.unwrap() + 10.0 * self.inner_noise.turbulance(&noise_vec, 7)).sin())
         // final scene
-        vect!(1.0,1.0,1.0) * 2.0 * (self.scale.unwrap() + self.inner_noise.turbulance(&(self.scale.unwrap() * *noise_vec), 7))
+        vect!(1.0, 1.0, 1.0)
+            * 2.0
+            * (self.scale.unwrap()
+                + self
+                    .inner_noise
+                    .turbulance(&(self.scale.unwrap() * *noise_vec), 7))
     }
 
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -220,7 +223,6 @@ impl Texture for NoiseTexture {
     fn box_clone(&self) -> Box<dyn Texture> {
         Box::new(self.clone())
     }
- 
 }
 
 #[derive(Clone, Debug)]
@@ -232,16 +234,16 @@ pub struct MappedTexture {
 #[derive(Clone, Debug, Default)]
 pub struct MappedTextureBuilder<ImageFilenameSet>
 where
-    ImageFilenameSet: util::ToAssign
-{ 
+    ImageFilenameSet: util::ToAssign,
+{
     // mandatory field
     image_filename_set: PhantomData<ImageFilenameSet>,
-    filename: String
+    filename: String,
 }
 
 impl<ImageFilenameSet> MappedTextureBuilder<ImageFilenameSet>
 where
-    ImageFilenameSet: util::ToAssign
+    ImageFilenameSet: util::ToAssign,
 {
     pub fn with_file(self, filename: &dyn ToString) -> MappedTextureBuilder<util::Yes> {
         MappedTextureBuilder {
@@ -249,7 +251,6 @@ where
             filename: filename.to_string(),
         }
     }
-
 }
 
 impl MappedTextureBuilder<util::Yes> {
@@ -261,22 +262,23 @@ impl MappedTextureBuilder<util::Yes> {
     }
 }
 
-
 impl Texture for MappedTexture {
-    fn value(&self, u:f64, v: f64, _p: &Vec3) -> Color {
+    fn value(&self, u: f64, v: f64, _p: &Vec3) -> Color {
         let r = self.image.get_uv(u as f32, v as f32);
         match r {
-            Err(_) => { vect!(0, 0, 0) },
+            Err(_) => {
+                vect!(0, 0, 0)
+            }
             Ok(x) => x,
         }
     }
 
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "MappedTexture: nx: {} ny: {} comp: {} using: {}",
-               self.image.nx,
-               self.image.ny,
-               self.image.comp,
-               self.filename)
+        write!(
+            f,
+            "MappedTexture: nx: {} ny: {} comp: {} using: {}",
+            self.image.nx, self.image.ny, self.image.comp, self.filename
+        )
     }
 
     fn albedo(&self) -> TextureType {
@@ -286,7 +288,6 @@ impl Texture for MappedTexture {
     fn box_clone(&self) -> Box<dyn Texture> {
         Box::new(self.clone())
     }
- 
 }
 
 //#[allow(unused_macros, unused_imports)]
@@ -316,12 +317,7 @@ impl Texture for MappedTexture {
 mod test {
     #[allow(unused_imports)]
     use crate::textures::{
-        TextureType,
-        CheckerTexture,
-        ConstantTexture,
-        MappedTexture,
-        MappedTextureBuilder,
-        Texture,
+        CheckerTexture, ConstantTexture, MappedTexture, MappedTextureBuilder, Texture, TextureType,
     };
     use crate::util;
     use crate::vect;
@@ -329,27 +325,21 @@ mod test {
 
     #[test]
     fn test_checker_texture() {
-       let _checker = TextureType::CheckerTexture(CheckerTexture::new(
-        TextureType::ConstantTexture(
-            ConstantTexture::new(&vect!(0.2, 0.3, 0.1))
-            ),
-        TextureType::ConstantTexture(
-            ConstantTexture::new(&vect!(0.9, 0.9, 0.9))
-            )
+        let _checker = TextureType::CheckerTexture(CheckerTexture::new(
+            TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.2, 0.3, 0.1))),
+            TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.9, 0.9, 0.9))),
         ));
 
-       for x in 0..100 {
+        for x in 0..100 {
             for y in 0..100 {
                 for z in 0..100 {
-
                     #[allow(unused_variables)]
                     let tmp_vec = vect!(x, y, z);
                     //poluting the output
                     //println!("{} at point {}", checker.value(0., 0., &tmp_vec), &tmp_vec);
                 }
             }
-       }
- 
+        }
     }
 
     #[test]
@@ -359,15 +349,17 @@ mod test {
         source_path.push("../results");
         source_path.push("test_image.bmp");
 
-        let image_texture =
-            MappedTextureBuilder::<util::No>::default().with_file(
-                &String::from(source_path.as_os_str().to_str().unwrap())).build();
+        let image_texture = MappedTextureBuilder::<util::No>::default()
+            .with_file(&String::from(source_path.as_os_str().to_str().unwrap()))
+            .build();
 
         let img = image_texture.image;
         let c3 = img.get(115, 164);
-        let ans3 = vect!(115./255., 164./255., (115_u32*164_u32).div_floor(255) as f64/255.);
+        let ans3 = vect!(
+            115. / 255.,
+            164. / 255.,
+            (115_u32 * 164_u32).div_floor(255) as f64 / 255.
+        );
         assert_eq!(c3.ok(), Some(ans3));
-
-
     }
 }

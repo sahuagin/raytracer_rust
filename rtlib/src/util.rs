@@ -1,44 +1,31 @@
-use std::{env, path::PathBuf};
-use libm;
-use std::fs::File;
-use std::io::prelude::*;
-use crate::instances::{
-    TranslateHittable,
-    RotateHittable,
-};
-use super::materials::{
-    Dielectric,
-    DiffuseLight,
-    Lambertian,
-    Material,
-    MaterialType,
-    Metal
-};
 #[allow(unused_imports)]
 use super::cube::Cube;
-use super::textures::{
-    ConstantTexture,
-    CheckerTexture,
-    MappedTextureBuilder,
-    NoiseTexture,
-    TextureType};
-use super::ray::Ray;
-use super::rectangle::{Axis, Rect};
-use super::sphere::{Sphere, MovingSphere};
-#[allow(unused_imports)]
-use super::vec3::{self, dot, unit_vector, Color, Point3, Vec3};
-use super::{color_to_texture, vect, wrap_material};
-use crate::hittable::{Custom, FlipNormal, Hittable};
-use rand::Rng;
-#[allow(unused_imports)]
-use std::io::{self, Write};
-use std::sync::Arc;
 use super::hitlist::HitList;
 #[allow(unused_imports)]
 use super::hittable::{Hitters, TextureCoord};
-use num_traits::float;
-use crate::volumes::{ConstantMedium};
+use super::materials::{Dielectric, DiffuseLight, Lambertian, Material, MaterialType, Metal};
+use super::ray::Ray;
+use super::rectangle::{Axis, Rect};
+use super::sphere::{MovingSphere, Sphere};
+use super::textures::{
+    CheckerTexture, ConstantTexture, MappedTextureBuilder, NoiseTexture, TextureType,
+};
+#[allow(unused_imports)]
+use super::vec3::{self, dot, unit_vector, Color, Point3, Vec3};
+use super::{color_to_texture, vect, wrap_material};
 use crate::bvh::Bvh;
+use crate::hittable::{Custom, FlipNormal, Hittable};
+use crate::instances::{RotateHittable, TranslateHittable};
+use crate::volumes::ConstantMedium;
+use libm;
+use num_traits::float;
+use rand::Rng;
+use std::fs::File;
+use std::io::prelude::*;
+#[allow(unused_imports)]
+use std::io::{self, Write};
+use std::sync::Arc;
+use std::{env, path::PathBuf};
 
 #[allow(unused_imports, dead_code)]
 pub fn optional_arg<T>(thing: Option<T>) -> T
@@ -52,7 +39,7 @@ where
 // use std::fmt::Debug
 // use std::market::PhantomData;
 // #[derive(Debug, Default)]
-// example: 
+// example:
 // pub struct Yes;
 //#[derive(Debug, Default)]
 //pub struct No;
@@ -209,7 +196,6 @@ where
 //        .execute();
 //}
 
-
 // Putting the reusable parts here for the program
 #[derive(Debug, Default)]
 pub struct Yes;
@@ -227,11 +213,7 @@ impl Assigned for Yes {}
 impl NotAssigned for No {}
 
 #[allow(unused_imports, dead_code)]
-pub fn color(
-    ray: &Ray,
-    world: & dyn Hittable,
-    depth: i32,
-    interior_light: &Color) -> Color {
+pub fn color(ray: &Ray, world: &dyn Hittable, depth: i32, interior_light: &Color) -> Color {
     // the 0.001 ignores hits very close to 0, which handles issues with
     // floating point approximation, which generates "shadow acne"
 
@@ -253,26 +235,26 @@ pub fn color(
     //let start_color = vect!(1,1,1);
     //let start_color = vect!(0,0,0);
     let start_color = *interior_light;
-    // since this will reduce the color by a percent, we'll default to (1,1,1) for 
+    // since this will reduce the color by a percent, we'll default to (1,1,1) for
     // interior lighting. For scenes with explicit lighting, (0,0,0) should be used.
     let mut tmpray = ray.clone();
     let mut depth = depth;
     loop {
-        // does the ray we currently have 
+        // does the ray we currently have
         let hit_record = world.hit(&tmpray, 0.001, f64::INFINITY);
-        if hit_record.is_some() == true{
+        if hit_record.is_some() == true {
             let hit_record = hit_record.unwrap();
             // as soon as we know we have a hit, generate the emitted value
             let emitted = hit_record.material.emitted(
                 hit_record.texture_coord.unwrap_or_default().u,
                 hit_record.texture_coord.unwrap_or_default().v,
                 &hit_record.p,
-                );
+            );
             // now, do we scatter the ray?
             if depth > 0 &&
                 let Some((attenuation, sray)) =
                    hit_record.material.scatter(&tmpray, &hit_record) {
-                
+
                 emitts.push(emitted);
                 attenuations.push(attenuation);
                 tmpray = sray;
@@ -283,10 +265,9 @@ pub fn color(
                 attenuations.push(start_color);
                 break;
             }
-
         } else {
             // return emitted. Likely the default of black
-            emitts.push(vect!(0,0,0));
+            emitts.push(vect!(0, 0, 0));
             attenuations.push(start_color);
             break;
         }
@@ -301,16 +282,14 @@ pub fn color(
         color = (*a * color) + e;
     }
     color
-
 }
-
 
 // This is used for all of the initial images that we've done where you just see
 // the placed objects and their colors. Shadows are from the reflections and reduction
 // of color(subsequent colors/hits are multiplied to each other, this reduces the value
 // and makes things darker). You use this if you want to see the scene light fully.
 #[allow(unused_imports, dead_code)]
-pub fn color_use_interior_lighting(ray: &Ray, world: & dyn Hittable, depth: i32) -> Color {
+pub fn color_use_interior_lighting(ray: &Ray, world: &dyn Hittable, depth: i32) -> Color {
     let interior_light = Color::new(1.0, 1.0, 1.0);
     color(&ray, world, depth, &interior_light)
 }
@@ -319,22 +298,19 @@ pub fn color_use_interior_lighting(ray: &Ray, world: & dyn Hittable, depth: i32)
 // dark, or unable to be seen. You could also call the color function and pass
 // in the color/light directly.
 #[allow(unused_imports, dead_code)]
-pub fn color_use_explicit_lighting(
-    ray: &Ray,
-    world: & dyn Hittable,
-    depth: i32) -> Color {
+pub fn color_use_explicit_lighting(ray: &Ray, world: &dyn Hittable, depth: i32) -> Color {
     let interior_light = Color::new(0.0, 0.0, 0.0);
     color(&ray, world, depth, &interior_light)
 }
 
 #[allow(unused_imports, dead_code)]
-pub fn color_just_attenuation(ray: &Ray, world: & dyn Hittable, _depth: i32) -> Color {
+pub fn color_just_attenuation(ray: &Ray, world: &dyn Hittable, _depth: i32) -> Color {
     // the 0.001 ignores hits very close to 0, which handles issues with
     // floating point approximation, which generates "shadow acne"
     let last_color: Color;
     // since this will reduce the color by a percent, we'll default to (1,1,1)
     loop {
-        // does the ray we currently have 
+        // does the ray we currently have
         if let Some(hit_record) = world.hit(&ray, 0.001, f64::INFINITY) {
             // attenuation IS the color returned
             if let Some((attenuation, _)) = hit_record.material.scatter(&ray, &hit_record) {
@@ -348,13 +324,11 @@ pub fn color_just_attenuation(ray: &Ray, world: & dyn Hittable, _depth: i32) -> 
             // be any reflections
             let unit_direction = unit_vector(&ray.direction());
             let t = 0.5 * (unit_direction.y + 1.0);
-            last_color = (1.0 - t) * Color::new(1.0, 1.0, 1.0)
-                + t * Color::new(0.5, 0.7, 1.0);
+            last_color = (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0);
             return last_color;
         }
     }
 }
-
 
 #[allow(unused_imports, dead_code)]
 pub fn write_color(
@@ -399,10 +373,11 @@ pub fn hit_sphere(center: &Point3, radius: f64, r: &Ray) -> f64 {
 #[allow(unused_imports, dead_code)]
 pub fn uv_for_sphere(hitvec: &Vec3) -> TextureCoord {
     let phi: f64 = libm::atan2(hitvec.z, hitvec.x);
-    let theta: f64 = hitvec.y.asin();//libm::asin(hitvec.y);
-    TextureCoord{
+    let theta: f64 = hitvec.y.asin(); //libm::asin(hitvec.y);
+    TextureCoord {
         u: 1. - (phi + std::f64::consts::PI) / (2. * std::f64::consts::PI),
-        v: (theta + std::f64::consts::PI/2.) / std::f64::consts::PI, }
+        v: (theta + std::f64::consts::PI / 2.) / std::f64::consts::PI,
+    }
 }
 
 #[allow(unused_imports, dead_code)]
@@ -440,32 +415,21 @@ pub fn refract(v: &Vec3, n: Vec3, ni_over_nt: f64) -> Option<Vec3> {
     }
 }
 #[allow(unused_imports, dead_code)]
-pub fn random_scene(
-    rng: &mut impl rand::Rng,
-    checked: bool,
-    moving: bool,
-    ) -> HitList {
+pub fn random_scene(rng: &mut impl rand::Rng, checked: bool, moving: bool) -> HitList {
     let mut hl: HitList = HitList::new();
     let checker: TextureType;
     if checked == true {
         checker = TextureType::CheckerTexture(CheckerTexture::new(
-        TextureType::ConstantTexture(
-            ConstantTexture::new(&vect!(0.2, 0.3, 0.1))
-            ),
-        TextureType::ConstantTexture(
-            ConstantTexture::new(&vect!(0.9, 0.9, 0.9))
-            )
+            TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.2, 0.3, 0.1))),
+            TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.9, 0.9, 0.9))),
         ));
-    } else 
-    {
-        checker = TextureType::ConstantTexture(
-                ConstantTexture::new(&vect!(0.5, 0.5, 0.5))
-            )
+    } else {
+        checker = TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.5, 0.5, 0.5)))
     }
     hl.add(Hitters::Sphere(Sphere::new(
         &vect!(0.0, -1000.0, 0.0),
         1000.0,
-        MaterialType::Lambertian(Lambertian::new(&checker))
+        MaterialType::Lambertian(Lambertian::new(&checker)),
     )));
     for a in -11..11 {
         for b in -11..11 {
@@ -491,7 +455,7 @@ pub fn random_scene(
                     } else {
                         hl.add(Hitters::MovingSphere(MovingSphere::new(
                             center.clone(),
-                            center + vect!(0,0.5*rng.gen::<f64>(), 0),
+                            center + vect!(0, 0.5 * rng.gen::<f64>(), 0),
                             0.0,
                             1.0,
                             0.2,
@@ -501,7 +465,6 @@ pub fn random_scene(
                                 rng.gen::<f64>() * rng.gen::<f64>()
                             )))),
                         )));
-
                     }
                 } else if choose_mat < 0.95 {
                     // metal
@@ -557,46 +520,42 @@ pub fn random_scene_with_time() {
 }
 
 #[allow(unused_imports, dead_code)]
-pub fn two_spheres() -> HitList{
+pub fn two_spheres() -> HitList {
     let checker = TextureType::CheckerTexture(CheckerTexture::new(
-            TextureType::ConstantTexture(
-                ConstantTexture::new(&vect!(0.2, 0.3, 0.1))),
-            TextureType::ConstantTexture(
-                ConstantTexture::new(&vect!(0.9, 0.9, 0.9))
-                )
-            ));
+        TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.2, 0.3, 0.1))),
+        TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.9, 0.9, 0.9))),
+    ));
     let mut hl: HitList = HitList::new();
     hl.add(Hitters::Sphere(Sphere::new(
-                &vect!(0, -10, 0),
-                10.0,
-                MaterialType::Lambertian(Lambertian::new(&checker)))
-                ));
+        &vect!(0, -10, 0),
+        10.0,
+        MaterialType::Lambertian(Lambertian::new(&checker)),
+    )));
     hl.add(Hitters::Sphere(Sphere::new(
-                &vect!(0, 10, 0),
-                10.,
-                MaterialType::Lambertian(Lambertian::new(&checker)))));
+        &vect!(0, 10, 0),
+        10.,
+        MaterialType::Lambertian(Lambertian::new(&checker)),
+    )));
 
     hl
 }
 
 #[allow(unused_imports, dead_code)]
 pub fn two_perlin_spheres() -> HitList {
-    let pertext = TextureType::NoiseTexture(
-                NoiseTexture::new().scale(5.7),
-            );
+    let pertext = TextureType::NoiseTexture(NoiseTexture::new().scale(5.7));
     let mut hl: HitList = HitList::new();
     hl.add(Hitters::Sphere(Sphere::new(
-                &vect!(0, -1000, 0),
-                1000.0,
-                MaterialType::Lambertian(Lambertian::new(&pertext)))
-                ));
+        &vect!(0, -1000, 0),
+        1000.0,
+        MaterialType::Lambertian(Lambertian::new(&pertext)),
+    )));
     hl.add(Hitters::Sphere(Sphere::new(
-                &vect!(0, 2, 0),
-                2.,
-                MaterialType::Lambertian(Lambertian::new(&pertext)))));
+        &vect!(0, 2, 0),
+        2.,
+        MaterialType::Lambertian(Lambertian::new(&pertext)),
+    )));
 
     hl
-
 }
 
 pub fn ffmin<T: float::Float + std::cmp::PartialOrd>(a: T, b: T) -> T {
@@ -615,7 +574,7 @@ pub fn ffmax<T: float::Float + std::cmp::PartialOrd>(a: T, b: T) -> T {
 }
 
 // should be read only
-unsafe impl Sync for Image{}
+unsafe impl Sync for Image {}
 #[derive(Debug, Clone)]
 pub struct Image {
     #[allow(dead_code)]
@@ -631,8 +590,8 @@ pub struct Image {
 
 #[allow(dead_code)]
 impl Image {
-    pub fn new(path: & dyn ToString) -> Self {
-            get_image_from_file(path)
+    pub fn new(path: &dyn ToString) -> Self {
+        get_image_from_file(path)
     }
 
     pub fn get(&self, x: u32, y: u32) -> Result<Color, &'static str> {
@@ -640,7 +599,7 @@ impl Image {
             return Err("Coordinates do no fit into image");
         }
         // y axis is flipped so, self.ny - y = y
-        // NOTE: ny is the size, so it'll be 1 larger 
+        // NOTE: ny is the size, so it'll be 1 larger
         let y = self.ny - y - 1;
         let index = ((x + (y * self.nx)) * self.comp) as usize;
 
@@ -661,29 +620,29 @@ impl Image {
         // So, not sure what do do here. Do we hardcode to 4, or do we take the returned
         // number of components and add +1 to it?
         Ok(vect!(
-                self.image[index] as f64 / 255.,
-                self.image[index+1] as f64 / 255.,
-                self.image[index+2] as f64 / 255.))
+            self.image[index] as f64 / 255.,
+            self.image[index + 1] as f64 / 255.,
+            self.image[index + 2] as f64 / 255.
+        ))
     }
 
     // takes a percentage of the x, and a percentage of the y coordinates.
     // It's going to expect that the values will be 0 <= val < 100
     //
     pub fn get_uv(&self, u: f32, v: f32) -> Result<Color, &'static str> {
-        if u < 0.0 || u >= 1.0
-            || v < 0.0 || v >= 1.0 {
-                return Err("Coordinates are out of bounds of a percentage.");
-            }
+        if u < 0.0 || u >= 1.0 || v < 0.0 || v >= 1.0 {
+            return Err("Coordinates are out of bounds of a percentage.");
+        }
         // get what x and y their percentages ==
         let x = (self.nx as f32 * u) as u32;
         // the (1. - v) inverts the axis so it matches our render screen
-        let y = (self.ny as f32 * (1.-v) - 0.001) as u32;
+        let y = (self.ny as f32 * (1. - v) - 0.001) as u32;
 
         self.get(x, y)
     }
 }
 
-pub fn get_image_from_file(path: & dyn ToString) -> Image {
+pub fn get_image_from_file(path: &dyn ToString) -> Image {
     let mut f = File::open(path.to_string()).expect("file not found");
     let mut contents = vec![];
     f.read_to_end(&mut contents).expect("Error reading file");
@@ -702,7 +661,7 @@ pub fn get_image_from_file(path: & dyn ToString) -> Image {
             &mut y,
             &mut comp,
             stb_image_rust::STBI_rgb_alpha,
-            );
+        );
         // add the alpha channel
         comp += 1;
         let alloced_len: usize = (x * y * comp) as usize;
@@ -717,7 +676,6 @@ pub fn get_image_from_file(path: & dyn ToString) -> Image {
             nx: x as u32,
             ny: y as u32,
             comp: comp as u32,
-
         }
     }
 }
@@ -730,110 +688,127 @@ pub fn earth_scene() -> HitList {
     source_path.push("Equirectangular_projection_SW.jpg");
 
     let pertext = TextureType::MappedTexture(
-                MappedTextureBuilder::<No>::default().with_file(&String::from(source_path.to_str().unwrap())).build()
-            );
+        MappedTextureBuilder::<No>::default()
+            .with_file(&String::from(source_path.to_str().unwrap()))
+            .build(),
+    );
     let mut hl: HitList = HitList::new();
     // make a smaller version of above to see if it's actually rendering
     hl.add(Hitters::Sphere(Sphere::new(
-                &vect!(-20, 2, -2),
-                10.0,
-                MaterialType::Lambertian(Lambertian::new(&pertext)))
-                ));
+        &vect!(-20, 2, -2),
+        10.0,
+        MaterialType::Lambertian(Lambertian::new(&pertext)),
+    )));
     hl.add(Hitters::Sphere(Sphere::new(
-                &vect!(0, 2, 0),
-                2.,
-                MaterialType::Lambertian(Lambertian::new(&pertext)))));
+        &vect!(0, 2, 0),
+        2.,
+        MaterialType::Lambertian(Lambertian::new(&pertext)),
+    )));
 
     hl
-
-
 }
-
 
 #[allow(unused_imports, dead_code)]
 pub fn simple_light_scene() -> HitList {
-   let mut hl = two_perlin_spheres();
+    let mut hl = two_perlin_spheres();
 
-   hl.add(Hitters::Sphere(Sphere::new(
-           &vect!(0, 7, 0), 2.,
-           MaterialType::DiffuseLight(
-               DiffuseLight::new(
-                   TextureType::ConstantTexture(
-                       ConstantTexture::new(&vect!(4, 4, 4))))))));
-   hl.add(
-       Hitters::Rect(Rect::new(
-               3., 5., 1., 3., -2.,
-               &MaterialType::DiffuseLight(
-                   DiffuseLight::new(
-                       TextureType::ConstantTexture(
-                           ConstantTexture::new(&vect!(4.,4.,4.))
-                           )
-                       )
-                   ),
-               Axis::Z)
-               )
-       );
-   hl
+    hl.add(Hitters::Sphere(Sphere::new(
+        &vect!(0, 7, 0),
+        2.,
+        MaterialType::DiffuseLight(DiffuseLight::new(TextureType::ConstantTexture(
+            ConstantTexture::new(&vect!(4, 4, 4)),
+        ))),
+    )));
+    hl.add(Hitters::Rect(Rect::new(
+        3.,
+        5.,
+        1.,
+        3.,
+        -2.,
+        &MaterialType::DiffuseLight(DiffuseLight::new(TextureType::ConstantTexture(
+            ConstantTexture::new(&vect!(4., 4., 4.)),
+        ))),
+        Axis::Z,
+    )));
+    hl
 }
 
 #[allow(unused_imports, dead_code)]
 pub fn cornell_box() -> HitList {
     let mut hl = HitList::default();
-    let red =  MaterialType::Lambertian(Lambertian::new(
-                &TextureType::ConstantTexture(ConstantTexture::new(
-                        &vect!(0.65, 0.05, 0.05)))));
-    let white = MaterialType::Lambertian(Lambertian::new(
-                &TextureType::ConstantTexture(ConstantTexture::new(
-                        &vect!(0.74, 0.73, 0.73)))));
-    let green = MaterialType::Lambertian(Lambertian::new(
-                &TextureType::ConstantTexture(ConstantTexture::new(
-                        &vect!(0.12, 0.45, 0.15)))));
-    let light = MaterialType::DiffuseLight(DiffuseLight::new(
-                TextureType::ConstantTexture(ConstantTexture::new(
-                        &vect!(15, 15, 15)))));
-    hl.add(Hitters::FlipNormal(
-            FlipNormal::new(
-                &Rect::new(0., 555., 0., 555., 555., &green, Axis::X).box_clone())));
-    hl.add(Hitters::Rect(Rect::new(0., 555., 0., 555., 0., &red, Axis::X)));
-    hl.add(Hitters::Rect(Rect::new(213., 343., 227., 332., 554., &light, Axis::Y)));
-    hl.add(Hitters::FlipNormal(
-            FlipNormal::new(
-                &Rect::new(0., 555., 0., 555., 555., &white, Axis::Y).box_clone())));
-    hl.add(Hitters::Rect(Rect::new(0., 555., 0., 555., 0., &white, Axis::Y)));
-    hl.add(Hitters::FlipNormal(
-            FlipNormal::new(
-                &Rect::new(0., 555., 0., 555., 555., &white, Axis::Z).box_clone())));
+    let red = MaterialType::Lambertian(Lambertian::new(&TextureType::ConstantTexture(
+        ConstantTexture::new(&vect!(0.65, 0.05, 0.05)),
+    )));
+    let white = MaterialType::Lambertian(Lambertian::new(&TextureType::ConstantTexture(
+        ConstantTexture::new(&vect!(0.74, 0.73, 0.73)),
+    )));
+    let green = MaterialType::Lambertian(Lambertian::new(&TextureType::ConstantTexture(
+        ConstantTexture::new(&vect!(0.12, 0.45, 0.15)),
+    )));
+    let light = MaterialType::DiffuseLight(DiffuseLight::new(TextureType::ConstantTexture(
+        ConstantTexture::new(&vect!(15, 15, 15)),
+    )));
+    hl.add(Hitters::FlipNormal(FlipNormal::new(
+        &Rect::new(0., 555., 0., 555., 555., &green, Axis::X).box_clone(),
+    )));
+    hl.add(Hitters::Rect(Rect::new(
+        0.,
+        555.,
+        0.,
+        555.,
+        0.,
+        &red,
+        Axis::X,
+    )));
+    hl.add(Hitters::Rect(Rect::new(
+        213.,
+        343.,
+        227.,
+        332.,
+        554.,
+        &light,
+        Axis::Y,
+    )));
+    hl.add(Hitters::FlipNormal(FlipNormal::new(
+        &Rect::new(0., 555., 0., 555., 555., &white, Axis::Y).box_clone(),
+    )));
+    hl.add(Hitters::Rect(Rect::new(
+        0.,
+        555.,
+        0.,
+        555.,
+        0.,
+        &white,
+        Axis::Y,
+    )));
+    hl.add(Hitters::FlipNormal(FlipNormal::new(
+        &Rect::new(0., 555., 0., 555., 555., &white, Axis::Z).box_clone(),
+    )));
     //hl.add(Hitters::Cube(Cube::new(&vect!(130, 0, 65), &vect!(295, 165, 230), &white)));
     //hl.add(Hitters::Cube(Cube::new(&vect!(265, 0, 295), &vect!(430, 330, 460), &white)));
-    let cube = Cube::new(
-                   &vect!(0, 0, 0),
-                   &vect!(165, 165, 165),
-                   &white
-                   );
+    let cube = Cube::new(&vect!(0, 0, 0), &vect!(165, 165, 165), &white);
     let cube: Box<dyn Hittable> = Box::new(cube);
-    let rotated: Box<dyn Hittable> =
-        Box::new(
-            RotateHittable::new( &cube ).with_rotate_around_y(-18.).build()
-            );
-    let translated: Box<dyn Hittable> = 
-        Box::new(
-            TranslateHittable::new(&rotated, &vect!(130, 0, 65))
-            );
+    let rotated: Box<dyn Hittable> = Box::new(
+        RotateHittable::new(&cube)
+            .with_rotate_around_y(-18.)
+            .build(),
+    );
+    let translated: Box<dyn Hittable> =
+        Box::new(TranslateHittable::new(&rotated, &vect!(130, 0, 65)));
     hl.add(Hitters::Custom(Custom::new(&translated)));
-    let sphere = Sphere::new(&vect!(165./2., 165. + 165./4., 165./2.), 165./4., light);
+    let sphere = Sphere::new(
+        &vect!(165. / 2., 165. + 165. / 4., 165. / 2.),
+        165. / 4.,
+        light,
+    );
     let transfer_sphere = TranslateHittable::new(&sphere.box_clone(), &vect!(130, 0, 65));
     hl.add(Hitters::Custom(Custom::new(&transfer_sphere.box_clone())));
-    let cube: Box<dyn Hittable> = Box::new(
-        Cube::new( &vect!(0, 0, 0), &vect!(165, 330, 165), &white)
-        );
+    let cube: Box<dyn Hittable> =
+        Box::new(Cube::new(&vect!(0, 0, 0), &vect!(165, 330, 165), &white));
     let rotated: Box<dyn Hittable> =
-        Box::new(
-            RotateHittable::new( &cube ).with_rotate_around_y(15.).build()
-            );
+        Box::new(RotateHittable::new(&cube).with_rotate_around_y(15.).build());
     let translated: Box<dyn Hittable> =
-        Box::new(
-            TranslateHittable::new(&rotated, &vect!(265, 0, 295))
-            );
+        Box::new(TranslateHittable::new(&rotated, &vect!(265, 0, 295)));
     hl.add(Hitters::Custom(Custom::new(&translated)));
     hl
 }
@@ -842,82 +817,93 @@ pub fn cornell_box() -> HitList {
 pub fn cornell_smoke() -> HitList {
     let mut hl = HitList::new();
 
-    let red: MaterialType = MaterialType::Lambertian(
-        Lambertian::new(
-            &TextureType::ConstantTexture(
-                ConstantTexture::new(&vect!(0.65, 0.05, 0.05)))));
-    let white: MaterialType = MaterialType::Lambertian(
-        Lambertian::new(
-                &TextureType::ConstantTexture(
-                        ConstantTexture::new(&vect!(0.73, 0.73, 0.73))
-                    )
-            )
-        );
+    let red: MaterialType = MaterialType::Lambertian(Lambertian::new(
+        &TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.65, 0.05, 0.05))),
+    ));
+    let white: MaterialType = MaterialType::Lambertian(Lambertian::new(
+        &TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.73, 0.73, 0.73))),
+    ));
 
-    let green: MaterialType = MaterialType::Lambertian(
-        Lambertian::new(
-            &TextureType::ConstantTexture(
-                ConstantTexture::new(&vect!(0.12, 0.45, 0.15))
-                )
-            )
-        );
+    let green: MaterialType = MaterialType::Lambertian(Lambertian::new(
+        &TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.12, 0.45, 0.15))),
+    ));
 
-    let light: MaterialType = MaterialType::DiffuseLight(
-        DiffuseLight::new(
-            TextureType::ConstantTexture(
-                ConstantTexture::new(&vect!(7, 7, 7))
-            )
-        )
-    );
+    let light: MaterialType = MaterialType::DiffuseLight(DiffuseLight::new(
+        TextureType::ConstantTexture(ConstantTexture::new(&vect!(7, 7, 7))),
+    ));
 
-    hl.add( Hitters::FlipNormal(
-                FlipNormal::new(
-                    &Rect::new(0., 555., 0., 555., 555., &green, Axis::X).box_clone())));
-    hl.add(Hitters::Rect(Rect::new(0., 555., 0., 555., 0., &red, Axis::X)));
-    hl.add(Hitters::Rect(Rect::new(113., 443., 127., 432., 554., &light, Axis::Y)));
-    hl.add( Hitters::FlipNormal(
-                FlipNormal::new(
-                    &Rect::new(0., 555., 0., 555., 555., &white, Axis::Y).box_clone())));
-    hl.add(Hitters::Rect(Rect::new(0., 555., 0., 555., 0., &white, Axis::Y)));
-    hl.add( Hitters::FlipNormal(
-                FlipNormal::new(
-                    &Rect::new(0., 555., 0., 555., 555., &white, Axis::Z).box_clone())));
+    hl.add(Hitters::FlipNormal(FlipNormal::new(
+        &Rect::new(0., 555., 0., 555., 555., &green, Axis::X).box_clone(),
+    )));
+    hl.add(Hitters::Rect(Rect::new(
+        0.,
+        555.,
+        0.,
+        555.,
+        0.,
+        &red,
+        Axis::X,
+    )));
+    hl.add(Hitters::Rect(Rect::new(
+        113.,
+        443.,
+        127.,
+        432.,
+        554.,
+        &light,
+        Axis::Y,
+    )));
+    hl.add(Hitters::FlipNormal(FlipNormal::new(
+        &Rect::new(0., 555., 0., 555., 555., &white, Axis::Y).box_clone(),
+    )));
+    hl.add(Hitters::Rect(Rect::new(
+        0.,
+        555.,
+        0.,
+        555.,
+        0.,
+        &white,
+        Axis::Y,
+    )));
+    hl.add(Hitters::FlipNormal(FlipNormal::new(
+        &Rect::new(0., 555., 0., 555., 555., &white, Axis::Z).box_clone(),
+    )));
     let b1 = TranslateHittable::new(
         &RotateHittable::new(
-            &Cube::new(&vect!(0, 0, 0), &vect!(165, 165, 165), &white).box_clone()
-            ).with_rotate_around_y(-18.).build().box_clone(), &vect!(130, 0, 65));
+            &Cube::new(&vect!(0, 0, 0), &vect!(165, 165, 165), &white).box_clone(),
+        )
+        .with_rotate_around_y(-18.)
+        .build()
+        .box_clone(),
+        &vect!(130, 0, 65),
+    );
     let b2 = TranslateHittable::new(
         &RotateHittable::new(
-            &Cube::new(&vect!(0, 0, 0), &vect!(165, 330, 165), &white).box_clone()
-            ).with_rotate_around_y(15.).build().box_clone(), &vect!(265, 0, 295));
-    hl.add(
-        Hitters::Custom(
-        Custom::new(
-        &ConstantMedium::new(
-            b1.box_clone())
+            &Cube::new(&vect!(0, 0, 0), &vect!(165, 330, 165), &white).box_clone(),
+        )
+        .with_rotate_around_y(15.)
+        .build()
+        .box_clone(),
+        &vect!(265, 0, 295),
+    );
+    hl.add(Hitters::Custom(Custom::new(
+        &ConstantMedium::new(b1.box_clone())
             .with_density(0.01)
-            .with_phase_function(
-                MaterialType::Lambertian(
-                Lambertian::new(
-                    &TextureType::ConstantTexture(
-                        ConstantTexture::new(&vect!(1, 1, 1))
-                    ))))
-            .build().box_clone()
-        )));
-    hl.add(
-        Hitters::Custom(
-        Custom::new(
-        &ConstantMedium::new(
-            b2.box_clone())
+            .with_phase_function(MaterialType::Lambertian(Lambertian::new(
+                &TextureType::ConstantTexture(ConstantTexture::new(&vect!(1, 1, 1))),
+            )))
+            .build()
+            .box_clone(),
+    )));
+    hl.add(Hitters::Custom(Custom::new(
+        &ConstantMedium::new(b2.box_clone())
             .with_density(0.01)
-            .with_phase_function(
-                MaterialType::Lambertian(
-                Lambertian::new(
-                    &TextureType::ConstantTexture(
-                        ConstantTexture::new(&vect!(0, 0, 0))
-                    ))))
-            .build().box_clone()
-        )));
+            .with_phase_function(MaterialType::Lambertian(Lambertian::new(
+                &TextureType::ConstantTexture(ConstantTexture::new(&vect!(0, 0, 0))),
+            )))
+            .build()
+            .box_clone(),
+    )));
     hl
 }
 
@@ -926,21 +912,13 @@ pub fn final_scene() -> HitList {
     let mut hl = HitList::new();
     let mut boxlist = HitList::new();
     let mut boxlist2 = HitList::new();
-    let white: MaterialType = MaterialType::Lambertian(
-            Lambertian::new(
-                    &TextureType::ConstantTexture(
-                            ConstantTexture::new(&vect!(0.73, 0.73, 0.73))
-                        )
-                )
-            );
+    let white: MaterialType = MaterialType::Lambertian(Lambertian::new(
+        &TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.73, 0.73, 0.73))),
+    ));
 
-    let ground: MaterialType = MaterialType::Lambertian(
-            Lambertian::new(
-                    &TextureType::ConstantTexture(
-                            ConstantTexture::new(&vect!(0.48, 0.83, 0.53))
-                        )
-                )
-            );
+    let ground: MaterialType = MaterialType::Lambertian(Lambertian::new(
+        &TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.48, 0.83, 0.53))),
+    ));
 
     let num_boxes: usize = 20;
     for i in 0..num_boxes {
@@ -950,72 +928,79 @@ pub fn final_scene() -> HitList {
             let z0: f64 = -1000. + j as f64 * w;
             let y0: f64 = 0.;
             let x1 = x0 + w;
-            let y1 = 100. * (rng.gen::<f64>()+0.01);
+            let y1 = 100. * (rng.gen::<f64>() + 0.01);
             let z1: f64 = z0 + w;
-            boxlist.add(
-                Hitters::Cube(
-                    Cube::new(&vect!(x0, y0, z0), &vect!(x1, y1, z1), &ground)
-                    )
-                );
+            boxlist.add(Hitters::Cube(Cube::new(
+                &vect!(x0, y0, z0),
+                &vect!(x1, y1, z1),
+                &ground,
+            )));
         }
     }
     let mut bvh = Bvh::new();
     bvh.add_hitlist(&mut Arc::new(boxlist), 0.0, 1.0);
     let bvh = bvh.build();
     hl.add(Hitters::BvhNode(bvh));
-    let light: MaterialType = MaterialType::DiffuseLight(
-        DiffuseLight::new(TextureType::ConstantTexture(
-                ConstantTexture::new(&vect!(7, 7, 7))
-                )
-        ));
-    hl.add(
-        Hitters::Rect(Rect::new(123., 423., 147., 412., 554., &light, Axis::Y))
-        );
+    let light: MaterialType = MaterialType::DiffuseLight(DiffuseLight::new(
+        TextureType::ConstantTexture(ConstantTexture::new(&vect!(7, 7, 7))),
+    ));
+    hl.add(Hitters::Rect(Rect::new(
+        123.,
+        423.,
+        147.,
+        412.,
+        554.,
+        &light,
+        Axis::Y,
+    )));
     let center: Point3 = vect!(400, 400, 200);
-    hl.add(Hitters::MovingSphere(
-            MovingSphere::new(
-                center, center+vect!(30, 0, 0), 0., 1., 50.,
-                MaterialType::Lambertian(
-                    Lambertian::new(&TextureType::ConstantTexture(
-                            ConstantTexture::new(&vect!(0.7, 0.3, 0.1))))))));
-    hl.add(Hitters::Sphere(
-            Sphere::new(
-                &vect!(260, 150, 45), 50.,
-                MaterialType::Dielectric(
-                    Dielectric::new(&vect!(1,1,1), 1.5)
-                        ))));
+    hl.add(Hitters::MovingSphere(MovingSphere::new(
+        center,
+        center + vect!(30, 0, 0),
+        0.,
+        1.,
+        50.,
+        MaterialType::Lambertian(Lambertian::new(&TextureType::ConstantTexture(
+            ConstantTexture::new(&vect!(0.7, 0.3, 0.1)),
+        ))),
+    )));
     hl.add(Hitters::Sphere(Sphere::new(
-                &vect!(0, 150, 145),
-                50.,
-                MaterialType::Metal(
-                    Metal::new(
-                        TextureType::ConstantTexture(
-                            ConstantTexture::new(&vect!(0.8, 0.8, 0.9))),
-                            10.0)))));
+        &vect!(260, 150, 45),
+        50.,
+        MaterialType::Dielectric(Dielectric::new(&vect!(1, 1, 1), 1.5)),
+    )));
+    hl.add(Hitters::Sphere(Sphere::new(
+        &vect!(0, 150, 145),
+        50.,
+        MaterialType::Metal(Metal::new(
+            TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.8, 0.8, 0.9))),
+            10.0,
+        )),
+    )));
     let boundary = Sphere::new(
         &vect!(360, 150, 145),
         70.,
-        MaterialType::Dielectric(
-            Dielectric::new(&vect!(1.0, 1.0, 1.0), 1.5)
-            ));
+        MaterialType::Dielectric(Dielectric::new(&vect!(1.0, 1.0, 1.0), 1.5)),
+    );
     hl.add(Hitters::Sphere(boundary.clone()));
-    let cm = ConstantMedium::new(
-        boundary.box_clone()).with_density(0.2).with_phase_function(
-            MaterialType::Lambertian(
-                Lambertian::new(
-                    &TextureType::ConstantTexture( ConstantTexture::new(&vect!(0.2, 0.4, 0.9)))
-                    )
-                )
-            ).build();
+    let cm = ConstantMedium::new(boundary.box_clone())
+        .with_density(0.2)
+        .with_phase_function(MaterialType::Lambertian(Lambertian::new(
+            &TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.2, 0.4, 0.9))),
+        )))
+        .build();
     hl.add(Hitters::Custom(Custom::new(&cm.box_clone())));
-    let boundary = Sphere::new(&vect!(360, 150, 145), 70., MaterialType::Dielectric(
-            Dielectric::new(&vect!(1,1,1), 1.5)));
-    let cm = ConstantMedium::new(
-        boundary.box_clone()).with_density(0.0001).with_phase_function(
-        MaterialType::Lambertian(
-            Lambertian::new(
-                &TextureType::ConstantTexture(
-                    ConstantTexture::new(&vect!(1.0, 1.0, 1.0)))))).build();
+    let boundary = Sphere::new(
+        &vect!(360, 150, 145),
+        70.,
+        MaterialType::Dielectric(Dielectric::new(&vect!(1, 1, 1), 1.5)),
+    );
+    let cm = ConstantMedium::new(boundary.box_clone())
+        .with_density(0.0001)
+        .with_phase_function(MaterialType::Lambertian(Lambertian::new(
+            &TextureType::ConstantTexture(ConstantTexture::new(&vect!(1.0, 1.0, 1.0))),
+        )))
+        .build();
 
     hl.add(Hitters::Custom(Custom::new(&cm.box_clone())));
     //XXX get this from the cmdline in the future, with a default perhaps
@@ -1025,46 +1010,52 @@ pub fn final_scene() -> HitList {
     source_path.push("Equirectangular_projection_SW.jpg");
 
     let earth_texture = TextureType::MappedTexture(
-                MappedTextureBuilder::<No>::default().with_file(&String::from(source_path.to_str().unwrap())).build()
-            );
+        MappedTextureBuilder::<No>::default()
+            .with_file(&String::from(source_path.to_str().unwrap()))
+            .build(),
+    );
     let ematerial = MaterialType::Lambertian(Lambertian::new(&earth_texture));
-    hl.add(Hitters::Sphere(Sphere::new(&vect!(400,200,400), 100., ematerial)));
+    hl.add(Hitters::Sphere(Sphere::new(
+        &vect!(400, 200, 400),
+        100.,
+        ematerial,
+    )));
     let pertext = TextureType::NoiseTexture(NoiseTexture::new().scale(0.03));
-    hl.add(
-        Hitters::Sphere(
-            Sphere::new(
-                &vect!(220,280,300),
-                80., 
-                MaterialType::Lambertian(Lambertian::new(&pertext)))));
+    hl.add(Hitters::Sphere(Sphere::new(
+        &vect!(220, 280, 300),
+        80.,
+        MaterialType::Lambertian(Lambertian::new(&pertext)),
+    )));
     for _ in 0..1000 {
-        boxlist2.add(
-            Hitters::Sphere(Sphere::new(
-                    &vect!(
-                        165. * rng.gen::<f64>(),
-                        165. * rng.gen::<f64>(),
-                        165. * rng.gen::<f64>()),
-                    10.,
-                    white.clone()
-                    ))
-            );
+        boxlist2.add(Hitters::Sphere(Sphere::new(
+            &vect!(
+                165. * rng.gen::<f64>(),
+                165. * rng.gen::<f64>(),
+                165. * rng.gen::<f64>()
+            ),
+            10.,
+            white.clone(),
+        )));
     }
 
     let mut bvh = Bvh::new();
     bvh.add_hitlist(&mut Arc::new(boxlist2), 0.0, 1.0);
     let bvh = bvh.build();
-    hl.add(
-        Hitters::Custom(Custom::new(&TranslateHittable::new(
-                &RotateHittable::new(&bvh.box_clone())
-                    .with_rotate_around_y(-15.).build().box_clone()
-                , &vect!(-100, 270, 395)).box_clone()))
-        );
+    hl.add(Hitters::Custom(Custom::new(
+        &TranslateHittable::new(
+            &RotateHittable::new(&bvh.box_clone())
+                .with_rotate_around_y(-15.)
+                .build()
+                .box_clone(),
+            &vect!(-100, 270, 395),
+        )
+        .box_clone(),
+    )));
     hl
 }
 
 #[allow(unused_imports, dead_code)]
-pub fn one_million_ants_er_spheres(
-    rng: &mut impl rand::Rng,
-    ) -> HitList {
+pub fn one_million_ants_er_spheres(rng: &mut impl rand::Rng) -> HitList {
     let mut hl: HitList = HitList::new();
     for a in -50..=50 {
         for b in -50..=50 {
@@ -1077,15 +1068,12 @@ pub fn one_million_ants_er_spheres(
                 );
                 if (center - vect!(4.0, 0.2, 0.0)).length() > 0.9 {
                     if choose_mat < 0.3 {
-                        let text = TextureType::NoiseTexture(
-                            NoiseTexture::new().scale(5.7)
-                            );
+                        let text = TextureType::NoiseTexture(NoiseTexture::new().scale(5.7));
                         hl.add(Hitters::Sphere(Sphere::new(
                             &center,
                             0.3,
-                            MaterialType::Lambertian(Lambertian::new(&text))
+                            MaterialType::Lambertian(Lambertian::new(&text)),
                         )));
-
                     } else if choose_mat < 0.8 {
                         // diffuse
                         hl.add(Hitters::Sphere(Sphere::new(
@@ -1163,7 +1151,7 @@ mod test {
         // thread 'util::test::test_color' panicked at 'assertion failed: `(left == right)`
         // left: `Vec3T { x: 0.6056624327025936, y: 0.7633974596215561, z: 1.0 }`,
         // right: `Vec3T { x: 0.8943375672974064, y: 0.9366025403784438, z: 1.0 }`', rtlib/src/util.rs:326:9
- 
+
         let ans = Color {
             x: 1.0,
             y: 1.0,
@@ -1190,15 +1178,14 @@ mod test {
         // right: `Vec3 { x: 0.21132486540518708, y: 0.21132486540518708, z: 0.21132486540518708 }`', src/lib.rs:178:5
     }
 
-
+    use super::vect;
     #[allow(unused_imports)]
     use crate::materials::Metal;
     #[allow(unused_imports)]
     use crate::sphere;
+    use crate::util::{self, Image};
     #[allow(unused_imports)]
     use crate::vec3::Point3;
-    use super::vect;
-    use crate::util::{self, Image};
     use std::env;
 
     #[test]
@@ -1215,9 +1202,9 @@ mod test {
         let metal2 = metal.clone();
         let s = Hitters::Sphere(Sphere::new(&center, radius, metal));
         let pat = Vec3 {
-                x: 0.26794919243112264,
-                y: 0.26794919243112264,
-                z: 0.26794919243112264,
+            x: 0.26794919243112264,
+            y: 0.26794919243112264,
+            z: 0.26794919243112264,
         };
 
         let hitrec = Some(HitRecord {
@@ -1263,26 +1250,25 @@ mod test {
         let img = Image::new(&String::from(source_path.to_str().unwrap()));
 
         let c0 = img.get(97, 143);
-        let ans0 = vect!(181.0/255., 132.0/255., 29.0/255.);
+        let ans0 = vect!(181.0 / 255., 132.0 / 255., 29.0 / 255.);
 
         let c1 = img.get(81, 148);
-        let ans1 = vect!(181./255., 129./255., 43./255.);
+        let ans1 = vect!(181. / 255., 129. / 255., 43. / 255.);
 
         let c2 = img.get(102, 125);
-        let ans2 = vect!(252./255., 231./255., 212./255.);
+        let ans2 = vect!(252. / 255., 231. / 255., 212. / 255.);
 
         let c3 = img.get(115, 164);
-        let ans3 = vect!(181./255., 131./255., 44./255.);
+        let ans3 = vect!(181. / 255., 131. / 255., 44. / 255.);
 
         let c4 = img.get(0, 0);
-        let ans4 = vect!(255./255., 255./255., 253./255.);
+        let ans4 = vect!(255. / 255., 255. / 255., 253. / 255.);
 
         assert_eq!(c4.ok(), Some(ans4));
         assert_eq!(c3.ok(), Some(ans3));
         assert_eq!(c0.ok(), Some(ans0));
         assert_eq!(c1.ok(), Some(ans1));
         assert_eq!(c2.ok(), Some(ans2));
-
     }
 
     #[test]
@@ -1294,25 +1280,37 @@ mod test {
         let img = Image::new(&String::from(source_path.to_str().unwrap()));
 
         let c0 = img.get(0, 0);
-        let ans0 = vect!(0./255., 0./255., 0./255.);
+        let ans0 = vect!(0. / 255., 0. / 255., 0. / 255.);
         let c1_0 = img.get(1, 0);
-        let ans1_0 = vect!(1./255., 0./255., 0./255.);
+        let ans1_0 = vect!(1. / 255., 0. / 255., 0. / 255.);
         let c2_0 = img.get(2, 0);
-        let ans2_0 = vect!(2./255., 0./255., (2_u32*0_u32).div_floor(255) as f64/255.);
+        let ans2_0 = vect!(
+            2. / 255.,
+            0. / 255.,
+            (2_u32 * 0_u32).div_floor(255) as f64 / 255.
+        );
         let o0 = img.get(0, 254);
-        let oans0 = vect!(0./255., 254./255., 0./255.);
+        let oans0 = vect!(0. / 255., 254. / 255., 0. / 255.);
 
         let c1 = img.get(0, 1);
-        let ans1 = vect!(0./255., 1./255., 0./255.);
+        let ans1 = vect!(0. / 255., 1. / 255., 0. / 255.);
 
         let c2 = img.get(1, 2);
-        let ans2 = vect!(1./255., 2./255., 0.);
+        let ans2 = vect!(1. / 255., 2. / 255., 0.);
 
         let c3 = img.get(115, 164);
-        let ans3 = vect!(115./255., 164./255., (115_u32*164_u32).div_floor(255) as f64/255.);
+        let ans3 = vect!(
+            115. / 255.,
+            164. / 255.,
+            (115_u32 * 164_u32).div_floor(255) as f64 / 255.
+        );
 
         let c4 = img.get(254, 254);
-        let ans4 = vect!(254./255., 254./255., (254_u32*254_u32).div_floor(255) as f64/255.);
+        let ans4 = vect!(
+            254. / 255.,
+            254. / 255.,
+            (254_u32 * 254_u32).div_floor(255) as f64 / 255.
+        );
         assert_eq!(c0.ok(), Some(ans0));
         assert_eq!(c1_0.ok(), Some(ans1_0));
         assert_eq!(c2_0.ok(), Some(ans2_0));
@@ -1321,6 +1319,5 @@ mod test {
         assert_eq!(c2.ok(), Some(ans2));
         assert_eq!(c3.ok(), Some(ans3));
         assert_eq!(c4.ok(), Some(ans4));
-
     }
 }
