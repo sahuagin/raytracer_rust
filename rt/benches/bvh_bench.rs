@@ -3,6 +3,7 @@ use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criteri
 //use std::time::Instant;
 #[allow(unused_imports)]
 use rtlib::hittable::Hittable;
+use rtlib::hitlist::HitList;
 #[allow(unused_imports)]
 use rtlib::prelude::Vec3;
 #[allow(unused_imports)]
@@ -66,7 +67,7 @@ fn bench_random_scene_bvh() {
     // Chapter 12, what next?
     let start_time_in_sec:f64 = 0.0;
     let stop_time_in_sec:f64 = 0.0;
-    let mut world = Arc::new(random_scene(&mut rng, false));
+    let mut world = Arc::new(random_scene(&mut rng, false, false));
     let mut bvh = Bvh::new();
     bvh.add_hitlist(& mut world, start_time_in_sec, stop_time_in_sec);
     let world = Arc::new(bvh.build());
@@ -103,7 +104,7 @@ fn bench_random_scene_bvh() {
                     let u = (i as f64 + rng.gen::<f64>()) / (IMAGE_WIDTH - 1) as f64;
                     let v = (j as f64 + rng.gen::<f64>()) / (IMAGE_HEIGHT - 1) as f64;
                     let r = camera.get_ray(u, v);
-                    pixel_color += color(&r, world.as_ref(), MAX_DEPTH);
+                    pixel_color += color(&r, world.as_ref(), MAX_DEPTH, &vect!(1, 1, 1));
                 }
 
                 let n = n_finished.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -189,7 +190,8 @@ fn bench_random_scene_no_bvh() {
     // Chapter 12, what next?
     let start_time_in_sec:f64 = 0.0;
     let stop_time_in_sec:f64 = 0.0;
-    let world = Arc::new(random_scene(&mut rng, false));
+    let world: Arc<HitList>;
+    world = Arc::new(random_scene(&mut rng, false, false));
 
     let camera = Camera::new(
         look_from,
@@ -223,7 +225,7 @@ fn bench_random_scene_no_bvh() {
                     let u = (i as f64 + rng.gen::<f64>()) / (IMAGE_WIDTH - 1) as f64;
                     let v = (j as f64 + rng.gen::<f64>()) / (IMAGE_HEIGHT - 1) as f64;
                     let r = camera.get_ray(u, v);
-                    pixel_color += color(&r, world.as_ref(), MAX_DEPTH);
+                    pixel_color += color(&r, world.as_ref(), MAX_DEPTH, &vect!(1, 1, 1));
                 }
 
                 let n = n_finished.fetch_add(1, std::sync::atomic::Ordering::Relaxed);

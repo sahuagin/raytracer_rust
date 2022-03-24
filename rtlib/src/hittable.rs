@@ -119,6 +119,39 @@ impl Hittable for FlipNormal {
 
 }
 
+#[derive(Clone)]
+pub struct Custom(Box<dyn Hittable>);
+
+impl Custom {
+    pub fn new(hit: &Box<dyn Hittable>) -> Self {
+        Custom(hit.box_clone())
+    }
+
+    pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Custom: ")?;
+        self.0.as_ref().hitter_fmt(f)
+    }
+}
+
+impl Hittable for Custom {
+    fn hit(&self, r: &Ray, tmin: f64, tmax: f64) -> Option<HitRecord> {
+        self.0.hit(r, tmin, tmax)
+    }
+
+    fn box_clone<'a>(&self) -> Box<dyn Hittable> {
+        Box::new(self.clone())
+    }
+
+    fn bounding_box(&self, t0: f64, t1: f64) -> Option<BoundingBox> {
+        self.0.bounding_box(t0, t1)
+    }
+
+    fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.hitter_fmt(f)
+    }
+}
+
+
 #[derive(Clone, Copy, Default)]
 pub struct NoBatter;
 impl Hittable for NoBatter {
@@ -139,6 +172,10 @@ impl Hittable for NoBatter {
     }
 }
 
+
+unsafe impl Send for Hitters {}
+unsafe impl Sync for Hitters {}
+
 // all types that implement hittable will be represented in this wrapper
 #[derive(Clone)]
 pub enum Hitters {
@@ -151,9 +188,10 @@ pub enum Hitters {
     Cube(Cube),
     FlipNormal(FlipNormal),
     Rect(Rect),
-    Custom(Box<dyn Hittable>),
+    Custom(Custom),
     Nothing(NoBatter),
 }
+
 
 #[allow(unused_imports, dead_code)]
 #[derive(Clone, Copy, Debug, Default)]

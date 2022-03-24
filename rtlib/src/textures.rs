@@ -201,7 +201,12 @@ impl Texture for NoiseTexture {
         //let noise_vec = self.scale.unwrap() * *p;
         let noise_vec = p;
         //vect!(1,1,1) * 0.5 * (1.0 +self.inner_noise.turbulance(&noise_vec, 7)).sin()
-        vect!(1,1,1) * 0.5 * (1.0 + (self.scale.unwrap() + 10.0 * self.inner_noise.turbulance(&noise_vec, 7)).sin())
+        // as in book
+        //vect!(1,1,1) * 0.5 * (1.0 + (self.scale.unwrap() * p.z + 10.0 * self.inner_noise.turbulance(&noise_vec, 7)).sin())
+        // two perlin spheres
+        //vect!(1,1,1) * 0.5 * (1.0 + (self.scale.unwrap() + 10.0 * self.inner_noise.turbulance(&noise_vec, 7)).sin())
+        // final scene
+        vect!(1.0,1.0,1.0) * 2.0 * (self.scale.unwrap() + self.inner_noise.turbulance(&(self.scale.unwrap() * *noise_vec), 7))
     }
 
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

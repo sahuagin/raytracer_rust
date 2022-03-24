@@ -27,7 +27,9 @@ use rtlib::util::{
     cornell_box,
     cornell_smoke,
     earth_scene,
+    final_scene,
     Image,
+    one_million_ants_er_spheres,
     random_scene,
     simple_light_scene,
     two_perlin_spheres,
@@ -148,6 +150,14 @@ fn main() {
         subcommand(
             Command::new("cornell_smoke")
             .about("Something about Cornell and smoke?")
+            ).
+        subcommand(
+            Command::new("final_scene")
+            .about("Final scene to render from Book2 'Ray Tracing: The Next Week'.")
+            ).
+        subcommand(
+            Command::new("million_spheres")
+            .about("Generate 1_000_000 spheres and render them. Mostly a benchmark.")
             );
 
     let matches = cmd.get_matches();
@@ -222,9 +232,9 @@ fn main() {
     #[allow(non_snake_case)]
     let IMAGE_WIDTH: i32 = ri.width; // image width
     #[allow(non_snake_case)]
-    let IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
+    let mut IMAGE_HEIGHT: i32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as i32;
     #[allow(non_snake_case)]
-    let NUM_PIXELS: i32 = IMAGE_WIDTH * IMAGE_HEIGHT;
+    let mut NUM_PIXELS: i32 = IMAGE_WIDTH * IMAGE_HEIGHT;
     let mut look_from = vect!(25.0, 2.5, 5.0);
     let mut look_at = rtmacros::vect!(3.0, 0.75, 0.75);
     let vup = rtmacros::vect!(0.0, 1.0, 0.0);
@@ -378,6 +388,46 @@ fn main() {
                 0.0,
                 1.0);
             world = Arc::new(cornell_smoke());
+            matches
+        },
+        Some(("final_scene", matches)) => {
+            look_from = vect!(450, 270, -380);
+            look_at = vect!(280, 280, 50);
+            dist_to_focus = 10.0;
+            APERTURE = 0.0;
+            IMAGE_HEIGHT = IMAGE_WIDTH;
+            NUM_PIXELS = IMAGE_WIDTH * IMAGE_HEIGHT;
+            interior_light = Color::new(0.0, 0.0, 0.0);
+            camera = Camera::new(
+                look_from,
+                look_at,
+                vect!(0,1,0),
+                50.,
+                1.0,
+                APERTURE,
+                dist_to_focus,
+                0.0,
+                1.0);
+            world = Arc::new(final_scene());
+            matches
+        },
+        Some(("million_spheres", matches)) => {
+            look_from = vect!(150, 2, 2);
+            look_at = vect!(0, 0, 0);
+            dist_to_focus = 10.0;
+            APERTURE = 0.0;
+            interior_light = Color::new(0.1, 0.1, 0.1);
+            camera = Camera::new(
+                look_from,
+                look_at,
+                vect!(0,1,0),
+                40.,
+                ASPECT_RATIO,
+                APERTURE,
+                dist_to_focus,
+                0.0,
+                0.0);
+            world = Arc::new(one_million_ants_er_spheres( &mut rng));
             matches
         },
         _ => unreachable!("clap should ensure we don't get here"),

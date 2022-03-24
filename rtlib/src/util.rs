@@ -28,7 +28,7 @@ use super::sphere::{Sphere, MovingSphere};
 #[allow(unused_imports)]
 use super::vec3::{self, dot, unit_vector, Color, Point3, Vec3};
 use super::{color_to_texture, vect, wrap_material};
-use crate::hittable::{FlipNormal, Hittable};
+use crate::hittable::{Custom, FlipNormal, Hittable};
 use rand::Rng;
 #[allow(unused_imports)]
 use std::io::{self, Write};
@@ -38,6 +38,7 @@ use super::hitlist::HitList;
 use super::hittable::{Hitters, TextureCoord};
 use num_traits::float;
 use crate::volumes::{ConstantMedium};
+use crate::bvh::Bvh;
 
 #[allow(unused_imports, dead_code)]
 pub fn optional_arg<T>(thing: Option<T>) -> T
@@ -818,10 +819,10 @@ pub fn cornell_box() -> HitList {
         Box::new(
             TranslateHittable::new(&rotated, &vect!(130, 0, 65))
             );
-    hl.add(Hitters::Custom(translated));
+    hl.add(Hitters::Custom(Custom::new(&translated)));
     let sphere = Sphere::new(&vect!(165./2., 165. + 165./4., 165./2.), 165./4., light);
     let transfer_sphere = TranslateHittable::new(&sphere.box_clone(), &vect!(130, 0, 65));
-    hl.add(Hitters::Custom(transfer_sphere.box_clone()));
+    hl.add(Hitters::Custom(Custom::new(&transfer_sphere.box_clone())));
     let cube: Box<dyn Hittable> = Box::new(
         Cube::new( &vect!(0, 0, 0), &vect!(165, 330, 165), &white)
         );
@@ -833,7 +834,7 @@ pub fn cornell_box() -> HitList {
         Box::new(
             TranslateHittable::new(&rotated, &vect!(265, 0, 295))
             );
-    hl.add(Hitters::Custom(translated));
+    hl.add(Hitters::Custom(Custom::new(&translated)));
     hl
 }
 
@@ -891,7 +892,8 @@ pub fn cornell_smoke() -> HitList {
             ).with_rotate_around_y(15.).build().box_clone(), &vect!(265, 0, 295));
     hl.add(
         Hitters::Custom(
-        ConstantMedium::new(
+        Custom::new(
+        &ConstantMedium::new(
             b1.box_clone())
             .with_density(0.01)
             .with_phase_function(
@@ -901,10 +903,11 @@ pub fn cornell_smoke() -> HitList {
                         ConstantTexture::new(&vect!(1, 1, 1))
                     ))))
             .build().box_clone()
-        ));
+        )));
     hl.add(
         Hitters::Custom(
-        ConstantMedium::new(
+        Custom::new(
+        &ConstantMedium::new(
             b2.box_clone())
             .with_density(0.01)
             .with_phase_function(
@@ -914,7 +917,230 @@ pub fn cornell_smoke() -> HitList {
                         ConstantTexture::new(&vect!(0, 0, 0))
                     ))))
             .build().box_clone()
+        )));
+    hl
+}
+
+pub fn final_scene() -> HitList {
+    let mut rng = rand::thread_rng();
+    let mut hl = HitList::new();
+    let mut boxlist = HitList::new();
+    let mut boxlist2 = HitList::new();
+    let white: MaterialType = MaterialType::Lambertian(
+            Lambertian::new(
+                    &TextureType::ConstantTexture(
+                            ConstantTexture::new(&vect!(0.73, 0.73, 0.73))
+                        )
+                )
+            );
+
+    let ground: MaterialType = MaterialType::Lambertian(
+            Lambertian::new(
+                    &TextureType::ConstantTexture(
+                            ConstantTexture::new(&vect!(0.48, 0.83, 0.53))
+                        )
+                )
+            );
+
+    let num_boxes: usize = 20;
+    for i in 0..num_boxes {
+        for j in 0..num_boxes {
+            let w: f64 = 100.;
+            let x0: f64 = -1000. + i as f64 * w;
+            let z0: f64 = -1000. + j as f64 * w;
+            let y0: f64 = 0.;
+            let x1 = x0 + w;
+            let y1 = 100. * (rng.gen::<f64>()+0.01);
+            let z1: f64 = z0 + w;
+            boxlist.add(
+                Hitters::Cube(
+                    Cube::new(&vect!(x0, y0, z0), &vect!(x1, y1, z1), &ground)
+                    )
+                );
+        }
+    }
+    let mut bvh = Bvh::new();
+    bvh.add_hitlist(&mut Arc::new(boxlist), 0.0, 1.0);
+    let bvh = bvh.build();
+    hl.add(Hitters::BvhNode(bvh));
+    let light: MaterialType = MaterialType::DiffuseLight(
+        DiffuseLight::new(TextureType::ConstantTexture(
+                ConstantTexture::new(&vect!(7, 7, 7))
+                )
         ));
+    hl.add(
+        Hitters::Rect(Rect::new(123., 423., 147., 412., 554., &light, Axis::Y))
+        );
+    let center: Point3 = vect!(400, 400, 200);
+    hl.add(Hitters::MovingSphere(
+            MovingSphere::new(
+                center, center+vect!(30, 0, 0), 0., 1., 50.,
+                MaterialType::Lambertian(
+                    Lambertian::new(&TextureType::ConstantTexture(
+                            ConstantTexture::new(&vect!(0.7, 0.3, 0.1))))))));
+    hl.add(Hitters::Sphere(
+            Sphere::new(
+                &vect!(260, 150, 45), 50.,
+                MaterialType::Dielectric(
+                    Dielectric::new(&vect!(1,1,1), 1.5)
+                        ))));
+    hl.add(Hitters::Sphere(Sphere::new(
+                &vect!(0, 150, 145),
+                50.,
+                MaterialType::Metal(
+                    Metal::new(
+                        TextureType::ConstantTexture(
+                            ConstantTexture::new(&vect!(0.8, 0.8, 0.9))),
+                            10.0)))));
+    let boundary = Sphere::new(
+        &vect!(360, 150, 145),
+        70.,
+        MaterialType::Dielectric(
+            Dielectric::new(&vect!(1.0, 1.0, 1.0), 1.5)
+            ));
+    hl.add(Hitters::Sphere(boundary.clone()));
+    let cm = ConstantMedium::new(
+        boundary.box_clone()).with_density(0.2).with_phase_function(
+            MaterialType::Lambertian(
+                Lambertian::new(
+                    &TextureType::ConstantTexture( ConstantTexture::new(&vect!(0.2, 0.4, 0.9)))
+                    )
+                )
+            ).build();
+    hl.add(Hitters::Custom(Custom::new(&cm.box_clone())));
+    let boundary = Sphere::new(&vect!(360, 150, 145), 70., MaterialType::Dielectric(
+            Dielectric::new(&vect!(1,1,1), 1.5)));
+    let cm = ConstantMedium::new(
+        boundary.box_clone()).with_density(0.0001).with_phase_function(
+        MaterialType::Lambertian(
+            Lambertian::new(
+                &TextureType::ConstantTexture(
+                    ConstantTexture::new(&vect!(1.0, 1.0, 1.0)))))).build();
+
+    hl.add(Hitters::Custom(Custom::new(&cm.box_clone())));
+    //XXX get this from the cmdline in the future, with a default perhaps
+    let root_dir = &env::var("CARGO_MANIFEST_DIR").expect("$CARGO_MANIFEST_DIR");
+    let mut source_path = PathBuf::from(root_dir);
+    source_path.push("../results");
+    source_path.push("Equirectangular_projection_SW.jpg");
+
+    let earth_texture = TextureType::MappedTexture(
+                MappedTextureBuilder::<No>::default().with_file(&String::from(source_path.to_str().unwrap())).build()
+            );
+    let ematerial = MaterialType::Lambertian(Lambertian::new(&earth_texture));
+    hl.add(Hitters::Sphere(Sphere::new(&vect!(400,200,400), 100., ematerial)));
+    let pertext = TextureType::NoiseTexture(NoiseTexture::new().scale(0.03));
+    hl.add(
+        Hitters::Sphere(
+            Sphere::new(
+                &vect!(220,280,300),
+                80., 
+                MaterialType::Lambertian(Lambertian::new(&pertext)))));
+    for _ in 0..1000 {
+        boxlist2.add(
+            Hitters::Sphere(Sphere::new(
+                    &vect!(
+                        165. * rng.gen::<f64>(),
+                        165. * rng.gen::<f64>(),
+                        165. * rng.gen::<f64>()),
+                    10.,
+                    white.clone()
+                    ))
+            );
+    }
+
+    let mut bvh = Bvh::new();
+    bvh.add_hitlist(&mut Arc::new(boxlist2), 0.0, 1.0);
+    let bvh = bvh.build();
+    hl.add(
+        Hitters::Custom(Custom::new(&TranslateHittable::new(
+                &RotateHittable::new(&bvh.box_clone())
+                    .with_rotate_around_y(-15.).build().box_clone()
+                , &vect!(-100, 270, 395)).box_clone()))
+        );
+    hl
+}
+
+#[allow(unused_imports, dead_code)]
+pub fn one_million_ants_er_spheres(
+    rng: &mut impl rand::Rng,
+    ) -> HitList {
+    let mut hl: HitList = HitList::new();
+    for a in -50..=50 {
+        for b in -50..=50 {
+            for c in -50..=50 {
+                let choose_mat = rng.gen::<f64>();
+                let center: Vec3 = vect!(
+                    a as f64 + 0.9 * rng.gen::<f64>(),
+                    b as f64 + 0.9 * rng.gen::<f64>(),
+                    c as f64 + 0.9 * rng.gen::<f64>()
+                );
+                if (center - vect!(4.0, 0.2, 0.0)).length() > 0.9 {
+                    if choose_mat < 0.3 {
+                        let text = TextureType::NoiseTexture(
+                            NoiseTexture::new().scale(5.7)
+                            );
+                        hl.add(Hitters::Sphere(Sphere::new(
+                            &center,
+                            0.3,
+                            MaterialType::Lambertian(Lambertian::new(&text))
+                        )));
+
+                    } else if choose_mat < 0.8 {
+                        // diffuse
+                        hl.add(Hitters::Sphere(Sphere::new(
+                            &center,
+                            0.4,
+                            MaterialType::Lambertian(Lambertian::new(&color_to_texture!(&vect!(
+                                rng.gen::<f64>() * rng.gen::<f64>(),
+                                rng.gen::<f64>() * rng.gen::<f64>(),
+                                rng.gen::<f64>() * rng.gen::<f64>()
+                            )))),
+                        )));
+                    } else if choose_mat < 0.95 {
+                        // metal
+                        hl.add(Hitters::Sphere(Sphere::new(
+                            &center,
+                            0.5,
+                            wrap_material!(
+                                Metal,
+                                color_to_texture!(&vect!(
+                                    0.5 * (1.0 + rng.gen::<f64>()),
+                                    0.5 * (1.0 + rng.gen::<f64>()),
+                                    0.5 * (1.0 + rng.gen::<f64>())
+                                )),
+                                0.5 * rng.gen::<f64>()
+                            ),
+                        )));
+                    } else {
+                        // glass
+                        hl.add(Hitters::Sphere(Sphere::new(
+                            &center,
+                            0.7,
+                            wrap_material!(Dielectric, &vect!(1.0, 1.0, 1.0), 1.5),
+                        )));
+                    }
+                }
+            }
+        }
+    }
+
+    hl.add(Hitters::Sphere(Sphere::new(
+        &vect!(0.0, 1.0, 0.0),
+        1.0,
+        wrap_material!(Dielectric, &vect!(1.0, 1.0, 1.0), 1.5),
+    )));
+    hl.add(Hitters::Sphere(Sphere::new(
+        &vect!(-4.0, 1.0, 0.0),
+        1.0,
+        wrap_material!(Lambertian, &color_to_texture!(&vect!(0.4, 0.2, 0.1))),
+    )));
+    hl.add(Hitters::Sphere(Sphere::new(
+        &vect!(-2000.0, 1.0, 0.0),
+        1000.0,
+        wrap_material!(Metal, color_to_texture!(&vect!(0.2, 0.2, 0.7)), 0.0),
+    )));
+
     hl
 }
 
@@ -963,6 +1189,7 @@ mod test {
         // left: `Vec3 { x: 0.8943375672974064, y: 0.9366025403784438, z: 1.0 }`,
         // right: `Vec3 { x: 0.21132486540518708, y: 0.21132486540518708, z: 0.21132486540518708 }`', src/lib.rs:178:5
     }
+
 
     #[allow(unused_imports)]
     use crate::materials::Metal;
