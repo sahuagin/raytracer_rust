@@ -148,15 +148,15 @@ impl Texture for CheckerTexture {
         let mult = 10.0;
         let sines = (mult * p.x).sin() * (mult * p.y).sin() * (mult * p.z).sin();
         if sines < 0. {
-            return self.odd.value(u, v, p);
+            self.odd.value(u, v, p)
         } else {
             //eprintln!("      greater than or equal to 0. returning {} )", self.even.value(u, v, p));
-            return self.even.value(u, v, p);
+            self.even.value(u, v, p)
         }
     }
 
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Checker: odd: {} even: {}", self.odd, self.even)
+        writeln!(f, "Checker: odd: {} even: {}", self.odd, self.even)
     }
 
     fn albedo(&self) -> TextureType {
@@ -183,7 +183,7 @@ impl NoiseTexture {
     }
 
     pub fn noise(&self, p: &Vec3) -> f64 {
-        self.inner_noise.noise(&p)
+        self.inner_noise.noise(p)
     }
 
     pub fn scale(mut self, sc: f64) -> Self {

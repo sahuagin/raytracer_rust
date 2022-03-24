@@ -108,7 +108,7 @@ impl<'a> BvhNode {
             self.p_right = Arc::new(Box::from(right_node));
         }
 
-        return self;
+        self
     }
 
     pub fn rand_axis() -> u8 {
@@ -138,7 +138,7 @@ impl<'a> Hittable for Bvh {
 
     #[allow(unused_variables)]
     fn bounding_box(&self, t0: f64, t1: f64) -> Option<BoundingBox> {
-        Some(self.bb.clone())
+        Some(self.bb)
     }
 
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord> {
@@ -149,19 +149,19 @@ impl<'a> Hittable for Bvh {
             let righthit = (*self.p_right).as_ref().hit(r, t_min, t_max);
             if lefthit.is_some() && righthit.is_some() {
                 if lefthit.clone().unwrap().t < righthit.clone().unwrap().t {
-                    return lefthit;
+                    lefthit
                 } else {
-                    return righthit;
+                    righthit
                 }
             } else if lefthit.is_some() {
-                return lefthit;
+                lefthit
             } else if righthit.is_some() {
-                return righthit;
+                righthit
             } else {
-                return None;
+                None
             }
         } else {
-            return None;
+            None
         }
     }
 
@@ -214,10 +214,7 @@ mod test {
         // and z from -1000 to 1000. The "2" is from a specific sphere that is placed
         // in the scene. So, the external bounding appears to be correct
         //println!("The BoundingBox after adding hitlist looks like: {}", bvh.bounding_box(0., 0.).unwrap());
-        let mut bb = AabbF::default();
-        bb.minimum = vect!(-1000, -2000, -1000);
-        bb.maximum = vect!(1000, 2, 1000);
-        let bb = BoundingBox::AabbF(bb);
+        let bb = AabbF::new( vect!(-1000, -2000, -1000), vect!(1000, 2, 1000));
         assert_eq!(bvh.bounding_box(0., 0.), bb.bounding_box(0., 0.));
     }
 
@@ -255,7 +252,7 @@ mod test {
             },
             front_face: false,
             texture_coord: None,
-            material: l.clone(),
+            material: l,
         };
         let mut hl = HitList::new();
         hl.add(Hitters::Sphere(s0));

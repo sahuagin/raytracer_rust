@@ -34,11 +34,11 @@ impl<'a> HitList {
     }
 
     pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "HitList: \n")?;
+        writeln!(f, "HitList: ")?;
         for obj in &self.list {
-            write!(f, "{}\n", &obj)?;
+            writeln!(f, "{}", &obj)?;
         }
-        write!(f, "   End HitList")
+        writeln!(f, "   End HitList")
     }
 }
 
@@ -47,7 +47,7 @@ impl Hittable for HitList {
         let mut temp_rec: Option<HitRecord> = None;
         let mut closest_so_far: f64 = t_max;
         for obj in &self.list {
-            if let Some(rec) = obj.hit(&r, t_min, closest_so_far) {
+            if let Some(rec) = obj.hit(r, t_min, closest_so_far) {
                 closest_so_far = rec.t;
                 temp_rec.replace(rec);
             }

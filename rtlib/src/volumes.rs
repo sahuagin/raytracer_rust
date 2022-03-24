@@ -16,6 +16,7 @@ pub struct ConstantMedium {
 }
 
 impl ConstantMedium {
+    #[allow(clippy::new_ret_no_self)]
     pub fn new(hitit: Box<dyn Hittable>) -> ConstantMediumBuilder<util::Yes, util::No, util::No> {
         ConstantMediumBuilder {
             boundary_type_set: PhantomData {},
@@ -81,7 +82,7 @@ where
             density_type_set: PhantomData {},
             material_type_set: PhantomData {},
             boundary: self.boundary,
-            density: density,
+            density,
             phase_function: self.phase_function,
         }
     }
@@ -119,7 +120,7 @@ impl Hittable for ConstantMedium {
         let db = false;
         if let Some(mut hitrec0) = self.boundary.hit(r, f64::MIN, f64::MAX) {
             if let Some(mut hitrec1) = self.boundary.hit(r, hitrec0.t + 0.0001, f64::MAX) {
-                if db == true {
+                if !db {
                     eprintln!("\nt0 t1  {}  {}", &hitrec0.t, &hitrec1.t);
                 }
                 if hitrec0.t < tmin {
@@ -138,31 +139,31 @@ impl Hittable for ConstantMedium {
                     (hitrec1.t - hitrec0.t) * r.direction().length();
                 let hit_distance: f64 = -1. * (1. / self.density) * rng.gen::<f64>().log(10.);
                 if hit_distance < distance_inside_boundary {
-                    if db == true {
+                    if !db {
                         eprintln!("hit_distance = {}", &hit_distance);
                     }
                     let t = hitrec0.t + hit_distance / r.direction().length();
-                    if db == true {
+                    if !db {
                         eprintln!("hitrec.t = {}", &t);
                     }
                     let p = r.point_at_parameter(t);
-                    if db == true {
+                    if !db {
                         eprintln!("hitrec.p = {}", &p);
                     }
                     let normal = vect!(1, 0, 0); // arbitrary
                     let mat = self.phase_function.clone();
                     let mut retval = HitRecord::new(p, t, mat);
                     retval.normal = normal;
-                    return Some(retval);
+                    Some(retval)
                 } else {
-                    return None;
+                    None
                 }
             } else {
-                return None;
+                None
             }
         } else {
-            return None;
-        };
+            None
+        }
     }
 
     fn box_clone<'a>(&self) -> Box<dyn Hittable> {

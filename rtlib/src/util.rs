@@ -237,23 +237,22 @@ pub fn color(ray: &Ray, world: &dyn Hittable, depth: i32, interior_light: &Color
     let start_color = *interior_light;
     // since this will reduce the color by a percent, we'll default to (1,1,1) for
     // interior lighting. For scenes with explicit lighting, (0,0,0) should be used.
-    let mut tmpray = ray.clone();
+    let mut tmpray = *ray;
     let mut depth = depth;
     loop {
         // does the ray we currently have
         let hit_record = world.hit(&tmpray, 0.001, f64::INFINITY);
-        if hit_record.is_some() == true {
-            let hit_record = hit_record.unwrap();
+        if let Some(hr) = hit_record {
             // as soon as we know we have a hit, generate the emitted value
-            let emitted = hit_record.material.emitted(
-                hit_record.texture_coord.unwrap_or_default().u,
-                hit_record.texture_coord.unwrap_or_default().v,
-                &hit_record.p,
+            let emitted = hr.material.emitted(
+                hr.texture_coord.unwrap_or_default().u,
+                hr.texture_coord.unwrap_or_default().v,
+                &hr.p,
             );
             // now, do we scatter the ray?
             if depth > 0 &&
                 let Some((attenuation, sray)) =
-                   hit_record.material.scatter(&tmpray, &hit_record) {
+                   hr.material.scatter(&tmpray, &hr) {
 
                 emitts.push(emitted);
                 attenuations.push(attenuation);
@@ -291,7 +290,7 @@ pub fn color(ray: &Ray, world: &dyn Hittable, depth: i32, interior_light: &Color
 #[allow(unused_imports, dead_code)]
 pub fn color_use_interior_lighting(ray: &Ray, world: &dyn Hittable, depth: i32) -> Color {
     let interior_light = Color::new(1.0, 1.0, 1.0);
-    color(&ray, world, depth, &interior_light)
+    color(ray, world, depth, &interior_light)
 }
 
 // This is used when you've placed lights in the scene and want to have anything not lit
@@ -300,7 +299,7 @@ pub fn color_use_interior_lighting(ray: &Ray, world: &dyn Hittable, depth: i32) 
 #[allow(unused_imports, dead_code)]
 pub fn color_use_explicit_lighting(ray: &Ray, world: &dyn Hittable, depth: i32) -> Color {
     let interior_light = Color::new(0.0, 0.0, 0.0);
-    color(&ray, world, depth, &interior_light)
+    color(ray, world, depth, &interior_light)
 }
 
 #[allow(unused_imports, dead_code)]
@@ -309,24 +308,21 @@ pub fn color_just_attenuation(ray: &Ray, world: &dyn Hittable, _depth: i32) -> C
     // floating point approximation, which generates "shadow acne"
     let last_color: Color;
     // since this will reduce the color by a percent, we'll default to (1,1,1)
-    loop {
-        // does the ray we currently have
-        if let Some(hit_record) = world.hit(&ray, 0.001, f64::INFINITY) {
-            // attenuation IS the color returned
-            if let Some((attenuation, _)) = hit_record.material.scatter(&ray, &hit_record) {
-                return attenuation;
-            } else {
-                last_color = Color::new(0.0, 0.0, 0.0);
-                return last_color;
-            }
+    // does the ray we currently have
+    if let Some(hit_record) = world.hit(ray, 0.001, f64::INFINITY) {
+        // attenuation IS the color returned
+        if let Some((attenuation, _)) = hit_record.material.scatter(ray, &hit_record) {
+            attenuation
         } else {
-            // this iteration didn't hit anything, that also mean that there won't
-            // be any reflections
-            let unit_direction = unit_vector(&ray.direction());
-            let t = 0.5 * (unit_direction.y + 1.0);
-            last_color = (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0);
-            return last_color;
+            Color::new(0.0, 0.0, 0.0)
         }
+    } else {
+        // this iteration didn't hit anything, that also mean that there won't
+        // be any reflections
+        let unit_direction = unit_vector(&ray.direction());
+        let t = 0.5 * (unit_direction.y + 1.0);
+        last_color = (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0);
+        last_color
     }
 }
 
@@ -364,9 +360,9 @@ pub fn hit_sphere(center: &Point3, radius: f64, r: &Ray) -> f64 {
     let c = dot(&oc, &oc) - radius * radius;
     let discriminant = b * b - 4_f64 * a * c;
     if discriminant < 0_f64 {
-        return -1.0;
+        -1.0
     } else {
-        return (-b - discriminant.sqrt()) / (2.0 * a);
+        (-b - discriminant.sqrt()) / (2.0 * a)
     }
 }
 
@@ -409,23 +405,22 @@ pub fn refract(v: &Vec3, n: Vec3, ni_over_nt: f64) -> Option<Vec3> {
     let discriminant = 1.0 - ni_over_nt * ni_over_nt * (1_f64 - dt * dt);
     if discriminant > 0.0 {
         let refracted = ni_over_nt * (uv - n * dt) - n * discriminant.sqrt();
-        return Some(refracted);
+        Some(refracted)
     } else {
-        return None;
+        None
     }
 }
 #[allow(unused_imports, dead_code)]
 pub fn random_scene(rng: &mut impl rand::Rng, checked: bool, moving: bool) -> HitList {
     let mut hl: HitList = HitList::new();
-    let checker: TextureType;
-    if checked == true {
-        checker = TextureType::CheckerTexture(CheckerTexture::new(
+    let checker: TextureType = if checked {
+        TextureType::CheckerTexture(CheckerTexture::new(
             TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.2, 0.3, 0.1))),
             TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.9, 0.9, 0.9))),
-        ));
+        ))
     } else {
-        checker = TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.5, 0.5, 0.5)))
-    }
+        TextureType::ConstantTexture(ConstantTexture::new(&vect!(0.5, 0.5, 0.5)))
+    };
     hl.add(Hitters::Sphere(Sphere::new(
         &vect!(0.0, -1000.0, 0.0),
         1000.0,
@@ -442,7 +437,7 @@ pub fn random_scene(rng: &mut impl rand::Rng, checked: bool, moving: bool) -> Hi
             if (center - vect!(4.0, 0.2, 0.0)).length() > 0.9 {
                 if choose_mat < 0.8 {
                     // diffuse
-                    if moving == false {
+                    if !moving {
                         hl.add(Hitters::Sphere(Sphere::new(
                             &center,
                             0.2,
@@ -454,7 +449,7 @@ pub fn random_scene(rng: &mut impl rand::Rng, checked: bool, moving: bool) -> Hi
                         )));
                     } else {
                         hl.add(Hitters::MovingSphere(MovingSphere::new(
-                            center.clone(),
+                            center,
                             center + vect!(0, 0.5 * rng.gen::<f64>(), 0),
                             0.0,
                             1.0,
@@ -630,7 +625,7 @@ impl Image {
     // It's going to expect that the values will be 0 <= val < 100
     //
     pub fn get_uv(&self, u: f32, v: f32) -> Result<Color, &'static str> {
-        if u < 0.0 || u >= 1.0 || v < 0.0 || v >= 1.0 {
+        if !(0.0..1.0).contains(&u) || !(0.0..1.0).contains(&v) {
             return Err("Coordinates are out of bounds of a percentage.");
         }
         // get what x and y their percentages ==
@@ -749,7 +744,7 @@ pub fn cornell_box() -> HitList {
         ConstantTexture::new(&vect!(15, 15, 15)),
     )));
     hl.add(Hitters::FlipNormal(FlipNormal::new(
-        &Rect::new(0., 555., 0., 555., 555., &green, Axis::X).box_clone(),
+        &Rect::new(0., 555., 0., 555., 555., &green, Axis::X),
     )));
     hl.add(Hitters::Rect(Rect::new(
         0.,
@@ -770,7 +765,7 @@ pub fn cornell_box() -> HitList {
         Axis::Y,
     )));
     hl.add(Hitters::FlipNormal(FlipNormal::new(
-        &Rect::new(0., 555., 0., 555., 555., &white, Axis::Y).box_clone(),
+        &Rect::new(0., 555., 0., 555., 555., &white, Axis::Y),
     )));
     hl.add(Hitters::Rect(Rect::new(
         0.,
@@ -782,7 +777,7 @@ pub fn cornell_box() -> HitList {
         Axis::Y,
     )));
     hl.add(Hitters::FlipNormal(FlipNormal::new(
-        &Rect::new(0., 555., 0., 555., 555., &white, Axis::Z).box_clone(),
+        &Rect::new(0., 555., 0., 555., 555., &white, Axis::Z),
     )));
     //hl.add(Hitters::Cube(Cube::new(&vect!(130, 0, 65), &vect!(295, 165, 230), &white)));
     //hl.add(Hitters::Cube(Cube::new(&vect!(265, 0, 295), &vect!(430, 330, 460), &white)));
@@ -833,7 +828,7 @@ pub fn cornell_smoke() -> HitList {
     ));
 
     hl.add(Hitters::FlipNormal(FlipNormal::new(
-        &Rect::new(0., 555., 0., 555., 555., &green, Axis::X).box_clone(),
+        &Rect::new(0., 555., 0., 555., 555., &green, Axis::X),
     )));
     hl.add(Hitters::Rect(Rect::new(
         0.,
@@ -854,7 +849,7 @@ pub fn cornell_smoke() -> HitList {
         Axis::Y,
     )));
     hl.add(Hitters::FlipNormal(FlipNormal::new(
-        &Rect::new(0., 555., 0., 555., 555., &white, Axis::Y).box_clone(),
+        &Rect::new(0., 555., 0., 555., 555., &white, Axis::Y),
     )));
     hl.add(Hitters::Rect(Rect::new(
         0.,
@@ -866,7 +861,7 @@ pub fn cornell_smoke() -> HitList {
         Axis::Y,
     )));
     hl.add(Hitters::FlipNormal(FlipNormal::new(
-        &Rect::new(0., 555., 0., 555., 555., &white, Axis::Z).box_clone(),
+        &Rect::new(0., 555., 0., 555., 555., &white, Axis::Z),
     )));
     let b1 = TranslateHittable::new(
         &RotateHittable::new(
@@ -1287,7 +1282,7 @@ mod test {
         let ans2_0 = vect!(
             2. / 255.,
             0. / 255.,
-            (2_u32 * 0_u32).div_floor(255) as f64 / 255.
+            0.
         );
         let o0 = img.get(0, 254);
         let oans0 = vect!(0. / 255., 254. / 255., 0. / 255.);

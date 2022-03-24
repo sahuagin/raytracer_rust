@@ -25,8 +25,8 @@ impl Default for BoundingBox {
 impl BoundingBox {
     pub fn get(&self) -> Option<Box<dyn AABB>> {
         match self {
-            BoundingBox::Aabb(x) => Some(Box::new(x.clone())),
-            BoundingBox::AabbF(x) => Some(Box::new(x.clone())),
+            BoundingBox::Aabb(x) => Some(Box::new(*x)),
+            BoundingBox::AabbF(x) => Some(Box::new(*x)),
             BoundingBox::Empty => None,
         }
     }
@@ -42,13 +42,14 @@ impl BoundingBox {
         let mut bbmin: Option<Vec3>;
         let mut bbmax: Option<Vec3>;
 
-        if bb0.is_some() == true {
+        if let Some(..) = bb0 {
             let bbfirst = &bb0.unwrap() as &dyn AABB;
             bbmin = Some(bbfirst.min());
             bbmax = Some(bbfirst.max());
-            if bb1.is_some() {
+            if let Some(..) = bb1 {
                 let tmpmin = bbmin.unwrap();
                 let tmpmax = bbmax.unwrap();
+                #[allow(clippy::unnecessary_unwrap)]
                 let bbsecond = &bb1.unwrap() as &dyn AABB;
                 // we have both, so we can compare
                 // we should have gotten Vec3 from the min() calls
@@ -66,16 +67,16 @@ impl BoundingBox {
             // that means that the assignments we have are what we want
             // could just return. If it was the first answer, then we've set them
             // to their new values
-            return Some(BoundingBox::AabbF(AabbF::new(
+            Some(BoundingBox::AabbF(AabbF::new(
                 bbmin.unwrap(),
                 bbmax.unwrap(),
-            )));
+            )))
         } else if bb1.is_some() {
             // then bb0 is none, and the answer is just bb1
-            return bb1.clone();
+            bb1
         } else {
             //both are None, return Empty
-            return Some(BoundingBox::Empty);
+            Some(BoundingBox::Empty)
         }
     }
 
@@ -83,21 +84,21 @@ impl BoundingBox {
         let box_left = lhs.bounding_box(0., 0.);
         let box_right = rhs.bounding_box(0., 0.);
 
-        if box_left.is_some() {
-            if box_right.is_some() {
-                return (box_left.unwrap().min().x - box_right.unwrap().min().x).partial_cmp(&0.0);
+        if let Some(bl) = box_left {
+            if let Some(br) = box_right {
+                (bl.min().x - br.min().x).partial_cmp(&0.0)
             } else {
                 // have lhs, don't have rhs
-                return Some(Ordering::Greater);
+                Some(Ordering::Greater)
             }
         } else {
             //lhs is None
-            if box_right.is_some() {
-                return Some(Ordering::Less);
+            if let Some(..) = box_right {
+                Some(Ordering::Less)
             } else {
                 // neither has a value
                 eprintln!("no bounding box in bvhnode compare!");
-                return None;
+                None
             }
         }
     }
@@ -106,21 +107,21 @@ impl BoundingBox {
         let box_left = lhs.bounding_box(0., 0.);
         let box_right = rhs.bounding_box(0., 0.);
 
-        if box_left.is_some() {
-            if box_right.is_some() {
-                return (box_left.unwrap().min().y - box_right.unwrap().min().y).partial_cmp(&0.0);
+        if let Some(bl) = box_left {
+            if let Some(br) = box_right {
+                (bl.min().y - br.min().y).partial_cmp(&0.0)
             } else {
                 // have lhs, don't have rhs
-                return Some(Ordering::Greater);
+                Some(Ordering::Greater)
             }
         } else {
             //lhs is None
-            if box_right.is_some() {
-                return Some(Ordering::Less);
+            if let Some(..) = box_right {
+                Some(Ordering::Less)
             } else {
                 // neither has a value
                 eprintln!("no bounding box in bvhnode compare!");
-                return None;
+                None
             }
         }
     }
@@ -129,21 +130,21 @@ impl BoundingBox {
         let box_left = lhs.bounding_box(0., 0.);
         let box_right = rhs.bounding_box(0., 0.);
 
-        if box_left.is_some() {
-            if box_right.is_some() {
-                return (box_left.unwrap().min().z - box_right.unwrap().min().z).partial_cmp(&0.0);
+        if let Some(bl) = box_left {
+            if let Some(br) = box_right {
+                (bl.min().z - br.min().z).partial_cmp(&0.0)
             } else {
                 // have lhs, don't have rhs
-                return Some(Ordering::Greater);
+                Some(Ordering::Greater)
             }
         } else {
             //lhs is None
             if box_right.is_some() {
-                return Some(Ordering::Less);
+                Some(Ordering::Less)
             } else {
                 // neither has a value
                 eprintln!("no bounding box in bvhnode compare!");
-                return None;
+                None
             }
         }
     }
@@ -177,15 +178,11 @@ impl PartialEq for BoundingBox {
     fn eq(&self, other: &Self) -> bool {
         self.min() == other.min() && self.max() == other.max()
     }
-
-    fn ne(&self, other: &Self) -> bool {
-        !self.eq(&other)
-    }
 }
 
 impl std::fmt::Display for BoundingBox {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        return self.inner_fmt(f);
+        self.inner_fmt(f)
     }
 }
 
@@ -220,7 +217,7 @@ impl Hittable for BoundingBox {
     }
 
     fn box_clone(&self) -> Box<dyn Hittable> {
-        Box::new((*self).clone())
+        Box::new(*self)
     }
 
     fn bounding_box(&self, t0: f64, t1: f64) -> Option<BoundingBox> {
@@ -338,11 +335,11 @@ impl Hittable for Aabb {
     }
 
     fn box_clone(&self) -> Box<dyn Hittable> {
-        Box::new((*self).clone())
+        Box::new(*self)
     }
 
     fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<BoundingBox> {
-        Some(BoundingBox::Aabb(self.clone()))
+        Some(BoundingBox::Aabb(*self))
     }
 
     fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -385,11 +382,11 @@ impl Hittable for AabbF {
     }
 
     fn box_clone(&self) -> Box<dyn Hittable> {
-        Box::new((*self).clone())
+        Box::new(*self)
     }
 
     fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<BoundingBox> {
-        Some(BoundingBox::AabbF(self.clone()))
+        Some(BoundingBox::AabbF(*self))
     }
 
     fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -411,8 +408,8 @@ mod test {
         let testray1 = Ray::new(&vect!(0, 0, 0.9), &vect!(128, 128, -512), None);
         let testray2 = Ray::new(&vect!(0, 0, -0.9), &vect!(128, 128, -512), None);
 
-        assert!(hitbox.hit(&testray1, f64::MIN, f64::MAX).is_none() == false);
-        assert!(hitbox.hit(&testray2, f64::MIN, f64::MAX).is_none() == true);
+        assert!(hitbox.hit(&testray1, f64::MIN, f64::MAX).is_some());
+        assert!(hitbox.hit(&testray2, f64::MIN, f64::MAX).is_none());
     }
 
     #[test]
@@ -421,8 +418,8 @@ mod test {
         let testray1 = Ray::new(&vect!(0, 0, 0.9), &vect!(128, 128, -512), None);
         let testray2 = Ray::new(&vect!(0, 0, -0.9), &vect!(128, 128, -512), None);
 
-        assert!(hitbox.hit(&testray1, f64::MIN, f64::MAX).is_none() == false);
-        assert!(hitbox.hit(&testray2, f64::MIN, f64::MAX).is_none() == true);
+        assert!(hitbox.hit(&testray1, f64::MIN, f64::MAX).is_some());
+        assert!(hitbox.hit(&testray2, f64::MIN, f64::MAX).is_none());
     }
 
     #[test]
@@ -433,8 +430,8 @@ mod test {
         let hb3 = BoundingBox::Aabb(Aabb::new(vect!(0, 0, 0), vect!(1, 1, 1)));
         let hb4 = BoundingBox::AabbF(AabbF::new(vect!(0, 0, 0), vect!(1, 1, 1)));
 
-        assert_eq!(hb1.get().is_none(), true);
-        assert_eq!(hb2.get().is_none(), true);
+        assert!(hb1.get().is_none());
+        assert!(hb2.get().is_none());
         assert_eq!(hb3.min(), vect!(0, 0, 0));
         assert_eq!(hb3.max(), vect!(1, 1, 1));
         assert_eq!(hb4.min(), vect!(0, 0, 0));

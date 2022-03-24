@@ -21,7 +21,7 @@ impl Sphere {
         Sphere {
             center: *c,
             radius: r,
-            material: material,
+            material,
         }
     }
 
@@ -78,7 +78,7 @@ impl Hittable for Sphere {
                 return rec;
             }
         }
-        return rec;
+        rec
     }
 
     fn box_clone(&self) -> Box<dyn Hittable> {
@@ -117,7 +117,7 @@ impl MovingSphere {
             time0: t0,
             time1: t1,
             radius: r,
-            material: material,
+            material,
         }
     }
 
@@ -259,7 +259,7 @@ mod test {
             },
             front_face: false,
             texture_coord: Some(util::uv_for_sphere(&pat)),
-            material: l.clone(),
+            material: l,
         };
 
         // this should have 2 hits, but we'll return the closest one

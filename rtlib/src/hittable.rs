@@ -14,7 +14,7 @@ use std::{cmp::PartialEq, fmt};
 pub trait Hittable {
     fn hit(&self, r: &Ray, t_min: f64, t_max: f64) -> Option<HitRecord>;
 
-    fn box_clone<'a>(&self) -> Box<dyn Hittable>;
+    fn box_clone(&self) -> Box<dyn Hittable>;
 
     fn bounding_box(&self, t0: f64, t1: f64) -> Option<BoundingBox>;
 
@@ -83,7 +83,7 @@ impl std::fmt::Display for Hitters {
 pub struct FlipNormal(Box<dyn Hittable>);
 
 impl FlipNormal {
-    pub fn new(hit: &Box<dyn Hittable>) -> Self {
+    pub fn new(hit: &dyn Hittable) -> Self {
         FlipNormal(hit.box_clone())
     }
 
@@ -122,7 +122,7 @@ impl Hittable for FlipNormal {
 pub struct Custom(Box<dyn Hittable>);
 
 impl Custom {
-    pub fn new(hit: &Box<dyn Hittable>) -> Self {
+    pub fn new(hit: &dyn Hittable) -> Self {
         Custom(hit.box_clone())
     }
 
@@ -158,7 +158,7 @@ impl Hittable for NoBatter {
     }
 
     fn box_clone<'a>(&self) -> Box<dyn Hittable> {
-        Box::new(self.clone())
+        Box::new(*self)
     }
 
     fn bounding_box(&self, _t0: f64, _t1: f64) -> Option<BoundingBox> {
@@ -303,6 +303,24 @@ impl std::fmt::Display for HitRecord {
     }
 }
 
+impl Hittable for std::boxed::Box<dyn Hittable> {
+    fn hit(&self, r: &Ray, tmin: f64, tmax: f64) -> Option<HitRecord> {
+        self.as_ref().hit(r, tmin, tmax)
+    }
+
+    fn box_clone<'a>(&self) -> Box<dyn Hittable> {
+        Box::new(self.as_ref().box_clone())
+    }
+
+    fn bounding_box(&self, t0: f64, t1: f64) -> Option<BoundingBox> {
+        self.as_ref().bounding_box(t0, t1)
+    }
+
+    fn hitter_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.as_ref().hitter_fmt(f)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::{FlipNormal, HitRecord, Hittable, TextureCoord};
@@ -340,7 +358,7 @@ mod test {
 
         let hr = yzrect.hit(&r, 0.0, 1.0);
 
-        let flipnorm = FlipNormal::new(&yzrect.box_clone());
+        let flipnorm = FlipNormal::new(&yzrect);
         let flipped_hr = flipnorm.hit(&r, 0.0, 1.0);
 
         assert_eq!(hr.unwrap().normal, flipped_hr.unwrap().normal * -1.);

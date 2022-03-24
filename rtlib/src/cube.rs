@@ -26,12 +26,12 @@ impl Cube {
             pt0.y,
             pt1.y,
             pt1.z,
-            &material,
+            material,
             Axis::Z,
         )));
         // flip the front to get the back
         hl.add(Hitters::FlipNormal(FlipNormal::new(
-            &Rect::new(pt0.x, pt1.x, pt0.y, pt1.y, pt0.z, &material, Axis::Z).box_clone(),
+            &Rect::new(pt0.x, pt1.x, pt0.y, pt1.y, pt0.z, material, Axis::Z),
         )));
 
         // top
@@ -41,12 +41,12 @@ impl Cube {
             pt0.z,
             pt1.z,
             pt1.y,
-            &material,
+            material,
             Axis::Y,
         )));
         // flip for bottom
         hl.add(Hitters::FlipNormal(FlipNormal::new(
-            &Rect::new(pt0.x, pt1.x, pt0.z, pt1.z, pt0.y, &material, Axis::Y).box_clone(),
+            &Rect::new(pt0.x, pt1.x, pt0.z, pt1.z, pt0.y, material, Axis::Y),
         )));
         // side
         hl.add(Hitters::Rect(Rect::new(
@@ -55,12 +55,12 @@ impl Cube {
             pt0.z,
             pt1.z,
             pt1.x,
-            &material,
+            material,
             Axis::X,
         )));
         // flip for other side
         hl.add(Hitters::FlipNormal(FlipNormal::new(
-            &Rect::new(pt0.y, pt1.y, pt0.z, pt1.z, pt0.x, &material, Axis::X).box_clone(),
+            &Rect::new(pt0.y, pt1.y, pt0.z, pt1.z, pt0.x, material, Axis::X),
         )));
         Cube {
             walls: hl,
@@ -70,15 +70,15 @@ impl Cube {
     }
 
     pub fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
+        writeln!(
             f,
-            "Cube: pmin: {} pmax: {} walls:\n",
+            "Cube: pmin: {} pmax: {} walls:",
             &self.pmin, &self.pmax
         )?;
         for (i, w) in self.walls.list.iter().enumerate() {
             write!(f, "{}: {}", &i, &w)?;
         }
-        write!(f, "  End Cube")
+        writeln!(f, "  End Cube")
     }
 }
 
@@ -206,6 +206,6 @@ mod test {
         hr_ans.normal = vect!(0, -1, 0);
         hr_ans.p = vect!(0, -1, 0);
         let hr = c0.hit(&r, 0.0, 1.0);
-        assert_eq!(hr, Some(hr_ans.clone()));
+        assert_eq!(hr, Some(hr_ans));
     }
 }

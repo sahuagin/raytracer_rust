@@ -564,7 +564,7 @@ mod test {
         let vec3 = Vec3::new(0.0, 0.0, 1.0);
         let vec4 = Vec3::new(1.0, 1.0, 1.0);
 
-        assert_eq!(vec + &vec, Vec3::new(6.0, 8.0, 10.0));
+        assert_eq!(vec + vec, Vec3::new(6.0, 8.0, 10.0));
         assert_eq!(vec + vec, Vec3::new(6.0, 8.0, 10.0));
         assert_eq!(vec + vec1, Vec3::new(4.0, 4.0, 5.0));
         assert_eq!(vec + vec2, Vec3::new(3.0, 5.0, 5.0));
@@ -580,34 +580,34 @@ mod test {
         let vec3 = Vec3::new(0.0, 0.0, 1.0);
         let vec4 = Vec3::new(1.0, 1.0, 1.0);
 
-        let vec_dup = vec.clone();
+        let vec_dup = vec;
         vec += &vec.clone();
         assert_eq!(vec, Vec3::new(6.0, 8.0, 10.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec += vec;
         assert_eq!(vec, Vec3::new(6.0, 8.0, 10.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec += &vec1;
         assert_eq!(vec, Vec3::new(4.0, 4.0, 5.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec += vec1;
         assert_eq!(vec, Vec3::new(4.0, 4.0, 5.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec += &vec2;
         assert_eq!(vec, Vec3::new(3.0, 5.0, 5.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec += vec2;
         assert_eq!(vec, Vec3::new(3.0, 5.0, 5.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec += &vec3;
         assert_eq!(vec, Vec3::new(3.0, 4.0, 6.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec += vec3;
         assert_eq!(vec, Vec3::new(3.0, 4.0, 6.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec += &vec4;
         assert_eq!(vec, Vec3::new(4.0, 5.0, 6.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec += vec4;
         assert_eq!(vec, Vec3::new(4.0, 5.0, 6.0));
     }
@@ -616,19 +616,19 @@ mod test {
     fn test_mul_assign() {
         let mut vec = Vec3::new(3.0, 4.0, 5.0);
 
-        let vec_dup = vec.clone();
+        let vec_dup = vec;
         vec *= 1.0;
         assert_eq!(vec, Vec3::new(3.0, 4.0, 5.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec *= 0.0;
         assert_eq!(vec, Vec3::new(0.0, 0.0, 0.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec *= 0.5;
         assert_eq!(vec, Vec3::new(1.5, 2.0, 2.5));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec *= 0.3;
         assert_eq!(vec, Vec3::new(3.0 * 0.3, 4.0 * 0.3, 5.0 * 0.3));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec *= 0.3;
         assert_eq!(vec, Vec3::new(0.25 * 4.0 * 3.0 * 0.3, 4.0 * 0.3, 5.0 * 0.3));
     }
@@ -637,16 +637,16 @@ mod test {
     fn test_div_assign() {
         let mut vec = Vec3::new(3.0, 4.0, 5.0);
 
-        let vec_dup = vec.clone();
+        let vec_dup = vec;
         vec /= 1.0;
         assert_eq!(vec, Vec3::new(3.0, 4.0, 5.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec /= 0.5;
         assert_eq!(vec, Vec3::new(6.0, 8.0, 10.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec /= 0.3;
         assert_eq!(vec, Vec3::new(3.0 / 0.3, 4.0 / 0.3, 5.0 / 0.3));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec /= 0.3;
         assert_eq!(vec, Vec3::new(0.25 * 4.0 * 3.0 / 0.3, 4.0 / 0.3, 5.0 / 0.3));
     }
@@ -666,7 +666,7 @@ mod test {
         let vec3 = Vec3::new(0.0, 0.0, 1.0);
         let vec4 = Vec3::new(1.0, 1.0, 1.0);
 
-        assert_eq!(vec - &vec, Vec3::new(0.0, 0.0, 0.0));
+        assert_eq!(vec - vec, Vec3::new(0.0, 0.0, 0.0));
         assert_eq!(vec - vec, Vec3::new(0.0, 0.0, 0.0));
         assert_eq!(vec - vec1, Vec3::new(2.0, 4.0, 5.0));
         assert_eq!(vec - vec2, Vec3::new(3.0, 3.0, 5.0));
@@ -682,34 +682,34 @@ mod test {
         let vec3 = Vec3::new(0.0, 0.0, 1.0);
         let vec4 = Vec3::new(1.0, 1.0, 1.0);
 
-        let vec_dup = vec.clone();
-        vec -= vec.clone();
-        assert_eq!(vec, Vec3::new(0.0, 0.0, 0.0));
-        vec = vec_dup.clone();
+        let vec_dup = vec;
         vec -= vec;
         assert_eq!(vec, Vec3::new(0.0, 0.0, 0.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
+        vec -= vec;
+        assert_eq!(vec, Vec3::new(0.0, 0.0, 0.0));
+        vec = vec_dup;
         vec -= vec1;
         assert_eq!(vec, Vec3::new(2.0, 4.0, 5.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec -= vec1;
         assert_eq!(vec, Vec3::new(2.0, 4.0, 5.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec -= vec2;
         assert_eq!(vec, Vec3::new(3.0, 3.0, 5.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec -= vec2;
         assert_eq!(vec, Vec3::new(3.0, 3.0, 5.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec -= vec3;
         assert_eq!(vec, Vec3::new(3.0, 4.0, 4.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec -= vec3;
         assert_eq!(vec, Vec3::new(3.0, 4.0, 4.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec -= vec4;
         assert_eq!(vec, Vec3::new(2.0, 3.0, 4.0));
-        vec = vec_dup.clone();
+        vec = vec_dup;
         vec -= vec4;
         assert_eq!(vec, Vec3::new(2.0, 3.0, 4.0));
     }
@@ -725,7 +725,7 @@ mod test {
         );
         assert_eq!(
             vec2.length(),
-            (15.0 * 15.0 as f64 + -5.0 * -5.0 as f64 + 42.0 * 42.0 as f64).sqrt()
+            (15.0 * 15.0_f64 + -5.0 * -5.0_f64 + 42.0 * 42.0_f64).sqrt()
         );
     }
 
@@ -740,7 +740,7 @@ mod test {
         );
         assert_eq!(
             vec2.length_squared(),
-            15.0 * 15.0 as f64 + -5.0 * -5.0 as f64 + 42.0 * 42.0 as f64
+            15.0 * 15_f64 + -5.0 * -5_f64 + 42.0 * 42_f64
         );
     }
 

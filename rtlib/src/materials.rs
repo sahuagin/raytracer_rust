@@ -1,4 +1,4 @@
-use super::hittable::{HitRecord, TextureCoord};
+use super::hittable::{HitRecord};
 use super::ray::Ray;
 use super::textures::{ConstantTexture, NoneTexture, Texture, TextureType};
 use super::util::{random_in_unit_sphere, reflect, refract};
@@ -42,7 +42,7 @@ pub struct NoneMaterial;
 
 impl Material for NoneMaterial {
     fn scatter(&self, _ray_in: &Ray, _rec: &HitRecord) -> Option<(Color, Ray)> {
-        return None;
+        None
     }
     fn albedo(&self) -> TextureType {
         TextureType::Nothing(NoneTexture)
@@ -59,53 +59,53 @@ impl Material for MaterialType {
     fn scatter(&self, ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
         match self {
             MaterialType::Lambertian(innertype) => {
-                return innertype.scatter(ray_in, rec);
+                innertype.scatter(ray_in, rec)
             }
             MaterialType::Dielectric(innertype) => {
-                return innertype.scatter(ray_in, rec);
+                innertype.scatter(ray_in, rec)
             }
             MaterialType::Metal(innertype) => {
-                return innertype.scatter(ray_in, rec);
+                innertype.scatter(ray_in, rec)
             }
             MaterialType::DiffuseLight(innertype) => {
-                return innertype.scatter(ray_in, rec);
+                innertype.scatter(ray_in, rec)
             }
             MaterialType::Nothing(_innertype) => {
-                return None;
+                None
             }
         }
     }
     fn albedo(&self) -> TextureType {
         match self {
-            MaterialType::Lambertian(innertype) => return innertype.albedo(),
-            MaterialType::Dielectric(innertype) => return innertype.albedo(),
-            MaterialType::Metal(innertype) => return innertype.albedo(),
-            MaterialType::DiffuseLight(innertype) => return innertype.albedo(),
+            MaterialType::Lambertian(innertype) => innertype.albedo(),
+            MaterialType::Dielectric(innertype) => innertype.albedo(),
+            MaterialType::Metal(innertype) => innertype.albedo(),
+            MaterialType::DiffuseLight(innertype) => innertype.albedo(),
             MaterialType::Nothing(_innertype) => TextureType::Nothing(NoneTexture),
         }
     }
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MaterialType::Lambertian(innertype) => return innertype.inner_fmt(f),
-            MaterialType::Dielectric(innertype) => return innertype.inner_fmt(f),
-            MaterialType::Metal(innertype) => return innertype.inner_fmt(f),
-            MaterialType::DiffuseLight(innertype) => return innertype.inner_fmt(f),
+            MaterialType::Lambertian(innertype) => innertype.inner_fmt(f),
+            MaterialType::Dielectric(innertype) => innertype.inner_fmt(f),
+            MaterialType::Metal(innertype) => innertype.inner_fmt(f),
+            MaterialType::DiffuseLight(innertype) => innertype.inner_fmt(f),
             MaterialType::Nothing(innertype) => innertype.inner_fmt(f),
         }
     }
     fn box_clone(&self) -> Box<MaterialType> {
         match self {
             MaterialType::Lambertian(innertype) => {
-                return Box::new(MaterialType::Lambertian(innertype.clone()));
+                Box::new(MaterialType::Lambertian(innertype.clone()))
             }
             MaterialType::Dielectric(innertype) => {
-                return Box::new(MaterialType::Dielectric(innertype.clone()));
+                Box::new(MaterialType::Dielectric(innertype.clone()))
             }
             MaterialType::Metal(innertype) => {
-                return Box::new(MaterialType::Metal(innertype.clone()));
+                Box::new(MaterialType::Metal(innertype.clone()))
             }
             MaterialType::DiffuseLight(innertype) => {
-                return Box::new(MaterialType::DiffuseLight(innertype.clone()));
+                Box::new(MaterialType::DiffuseLight(innertype.clone()))
             }
             MaterialType::Nothing(_innertype) => Box::new(MaterialType::Nothing(NoneMaterial)),
         }
@@ -113,10 +113,10 @@ impl Material for MaterialType {
 
     fn emitted(&self, u: f64, v: f64, p: &Vec3) -> Color {
         match self {
-            MaterialType::Lambertian(innertype) => return innertype.emitted(u, v, p),
-            MaterialType::Dielectric(innertype) => return innertype.emitted(u, v, p),
-            MaterialType::Metal(innertype) => return innertype.emitted(u, v, p),
-            MaterialType::DiffuseLight(innertype) => return innertype.emitted(u, v, p),
+            MaterialType::Lambertian(innertype) => innertype.emitted(u, v, p),
+            MaterialType::Dielectric(innertype) => innertype.emitted(u, v, p),
+            MaterialType::Metal(innertype) => innertype.emitted(u, v, p),
+            MaterialType::DiffuseLight(innertype) => innertype.emitted(u, v, p),
             MaterialType::Nothing(innertype) => innertype.emitted(u, v, p),
         }
     }
@@ -171,12 +171,12 @@ impl Lambertian {
 impl Material for Lambertian {
     fn scatter(&self, _ray_in: &Ray, rec: &HitRecord) -> Option<(Color, Ray)> {
         let target = rec.p + rec.normal + random_in_unit_sphere();
-        let scattered = Ray::new(&rec.p, &(target - &rec.p), None);
+        let scattered = Ray::new(&rec.p, &(target - rec.p), None);
         //let attenuation = self.albedo.value(0.0, 0.0, &rec.p);
-        let u: f64 = rec.texture_coord.unwrap_or(TextureCoord::default()).u;
-        let v: f64 = rec.texture_coord.unwrap_or(TextureCoord::default()).v;
+        let u: f64 = rec.texture_coord.unwrap_or_default().u;
+        let v: f64 = rec.texture_coord.unwrap_or_default().v;
         let attenuation = self.albedo.value(u, v, &rec.p);
-        return Some((attenuation, scattered));
+        Some((attenuation, scattered))
     }
 
     fn albedo(&self) -> TextureType {
@@ -210,7 +210,7 @@ impl Metal {
         };
         Metal {
             albedo: a,
-            fuzz: fuzz,
+            fuzz,
         }
     }
 }
@@ -228,7 +228,7 @@ impl Material for Metal {
         if dot(&scattered.direction(), &rec.normal) > 0.0 {
             return Some((attenuation, scattered));
         }
-        return None;
+        None
     }
 
     fn albedo(&self) -> TextureType {
@@ -238,7 +238,7 @@ impl Material for Metal {
     #[allow(dead_code)]
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "Metal::fuzz: {} albedo: ", self.fuzz)?;
-        return self.albedo().inner_fmt(f);
+        self.albedo().inner_fmt(f)
     }
     fn box_clone(&self) -> Box<MaterialType> {
         Box::new(MaterialType::Metal(self.clone()))
@@ -268,21 +268,18 @@ impl Material for Dielectric {
         let reflected = reflect(&ray_in.direction(), &rec.normal);
         let mut ni_over_nt: f64 = self.ref_idx;
         let attenuation = Color::new(1.0, 1.0, 1.0);
-        let cosine: f64;
         let reflect_prob: f64;
         let mut refracted = Color::new(0.0, 0.0, 0.0);
-        let scattered: Ray;
 
-        if dot(&ray_in.direction(), &outward_normal) > 0.0 {
+        let cosine: f64 = if dot(&ray_in.direction(), &outward_normal) > 0.0 {
             // otherwise it goes into the object
             outward_normal *= -1.0;
-            cosine =
-                self.ref_idx * dot(&ray_in.direction(), &rec.normal) / ray_in.direction().length();
+            self.ref_idx * dot(&ray_in.direction(), &rec.normal) / ray_in.direction().length()
         } else {
             // otherwise, it's the inverse refractive index
             ni_over_nt = 1.0 / self.ref_idx;
-            cosine = -dot(&ray_in.direction(), &rec.normal) / ray_in.direction().length()
-        }
+            -dot(&ray_in.direction(), &rec.normal) / ray_in.direction().length()
+        };
         if let Some(tmp_refracted) = refract(&ray_in.direction(), outward_normal, ni_over_nt) {
             refracted = tmp_refracted;
             reflect_prob = schlick(cosine, self.ref_idx);
@@ -290,12 +287,12 @@ impl Material for Dielectric {
             reflect_prob = 1.0;
         }
         let mut rng = rand::thread_rng();
-        if rng.gen::<f64>() < reflect_prob {
-            scattered = Ray::new(&rec.p, &reflected, None);
+        let scattered: Ray = if rng.gen::<f64>() < reflect_prob {
+            Ray::new(&rec.p, &reflected, None)
         } else {
-            scattered = Ray::new(&rec.p, &refracted, None);
-        }
-        return Some((attenuation, scattered));
+            Ray::new(&rec.p, &refracted, None)
+        };
+        Some((attenuation, scattered))
     }
 
     fn albedo(&self) -> TextureType {
@@ -304,8 +301,8 @@ impl Material for Dielectric {
 
     #[allow(dead_code)]
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Dielectric::refraction_index: {} albedo: ", self.ref_idx)?;
-        return self.albedo().inner_fmt(f);
+        writeln!(f, "Dielectric::refraction_index: {} albedo: ", self.ref_idx)?;
+        self.albedo().inner_fmt(f)
     }
 
     fn box_clone(&self) -> Box<MaterialType> {
@@ -328,7 +325,7 @@ impl DiffuseLight {
 
 impl Material for DiffuseLight {
     fn scatter(&self, _ray_in: &Ray, _rec: &HitRecord) -> Option<(Color, Ray)> {
-        return None;
+        None
     }
 
     fn albedo(&self) -> TextureType {
@@ -337,8 +334,8 @@ impl Material for DiffuseLight {
 
     #[allow(dead_code)]
     fn inner_fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "DiffuseLight: ")?;
-        return self.albedo().inner_fmt(f);
+        writeln!(f, "DiffuseLight: ")?;
+        self.albedo().inner_fmt(f)
     }
     fn box_clone(&self) -> Box<MaterialType> {
         Box::new(MaterialType::DiffuseLight(self.clone()))
@@ -353,7 +350,7 @@ mat_display!(DiffuseLight);
 pub fn schlick(cosine: f64, refractive_index: f64) -> f64 {
     let mut r0: f64 = (1.0 - refractive_index) / (1.0 + refractive_index);
     r0 = r0 * r0;
-    return r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0);
+    r0 + (1.0 - r0) * (1.0 - cosine).powf(5.0)
 }
 
 #[cfg(test)]

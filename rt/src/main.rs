@@ -2,11 +2,10 @@
 use clap::Command;
 #[allow(unused_imports)]
 use rand::Rng;
-use rtlib;
 // how it's done in scopeguard
 //#[macro_use(vect)] extern crate rtmacros;
 // also works?
-use rtmacros::vect;
+use rtlib::vect;
 use std::{
     io::{stderr, Write},
     path::Path,
@@ -183,7 +182,7 @@ fn main() {
     let el: bool = matches
         .value_of_t("explicit_lighting")
         .expect("Lighting type required.");
-    if el == true {
+    if el {
         // the scene will provide it's own light, so objects don't have to produce
         // their own light
         ri.interior_light = Color::new(0.0, 0.0, 0.0);
@@ -499,12 +498,11 @@ fn main() {
 
     for (i, pixel_color) in pixel_vec.into_iter().enumerate() {
         if i as i32 % (NUM_PIXELS / 1000) == 0 || i as i32 == NUM_PIXELS - 1 {
-            let n = i * 1;
             eprint!(
                 "\rWriting pixel {}/{} ({:.1?}%)",
-                n,
+                (i + 1),
                 NUM_PIXELS,
-                n as f64 / NUM_PIXELS as f64 * 100.0,
+                (i + 1) as f64 / NUM_PIXELS as f64 * 100.0,
             );
             stderr().flush().unwrap();
         }

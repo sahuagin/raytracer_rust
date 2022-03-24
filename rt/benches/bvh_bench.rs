@@ -3,7 +3,6 @@ use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criteri
 //use std::time::Instant;
 #[allow(unused_imports)]
 use rand::Rng;
-use rtlib;
 use rtlib::hitlist::HitList;
 #[allow(unused_imports)]
 use rtlib::hittable::Hittable;
@@ -130,12 +129,11 @@ fn bench_random_scene_bvh() {
 
     for (i, pixel_color) in pixel_vec.into_iter().enumerate() {
         if i as i32 % (NUM_PIXELS / 1000) == 0 || i as i32 == NUM_PIXELS - 1 {
-            let n = i * 1;
             eprint!(
                 "\rWriting pixel {}/{} ({:.1?}%)",
-                n,
+                (i + 1),
                 NUM_PIXELS,
-                n as f64 / NUM_PIXELS as f64 * 100.0,
+                (i + 1) as f64 / NUM_PIXELS as f64 * 100.0,
             );
             stderr().flush().unwrap();
         }
@@ -189,8 +187,7 @@ fn bench_random_scene_no_bvh() {
     // Chapter 12, what next?
     let start_time_in_sec: f64 = 0.0;
     let stop_time_in_sec: f64 = 0.0;
-    let world: Arc<HitList>;
-    world = Arc::new(random_scene(&mut rng, false, false));
+    let world: Arc<HitList> = Arc::new(random_scene(&mut rng, false, false));
 
     let camera = Camera::new(
         look_from,
@@ -251,12 +248,11 @@ fn bench_random_scene_no_bvh() {
 
     for (i, pixel_color) in pixel_vec.into_iter().enumerate() {
         if i as i32 % (NUM_PIXELS / 1000) == 0 || i as i32 == NUM_PIXELS - 1 {
-            let n = i * 1;
             eprint!(
                 "\rWriting pixel {}/{} ({:.1?}%)",
-                n,
+                (i + 1),
                 NUM_PIXELS,
-                n as f64 / NUM_PIXELS as f64 * 100.0,
+                (i + 1) as f64 / NUM_PIXELS as f64 * 100.0,
             );
             stderr().flush().unwrap();
         }
@@ -291,6 +287,7 @@ fn bench_bvh_non_bvh(c: &mut Criterion) {
             //ok, the iters is "What" iteration you're on, not how many to do
             b.iter(|| {
                 //let start = Instant::now();
+                #[allow(clippy::unit_arg)]
                 black_box(bench_random_scene_no_bvh());
                 //start.elapsed()
             })
@@ -299,6 +296,7 @@ fn bench_bvh_non_bvh(c: &mut Criterion) {
         group.bench_function(BenchmarkId::new("Random Scene BVH", i), |b| {
             b.iter(|| {
                 //let start = Instant::now();
+                #[allow(clippy::unit_arg)]
                 black_box(bench_random_scene_bvh());
                 //start.elapsed()
             })

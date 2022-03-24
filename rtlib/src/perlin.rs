@@ -48,7 +48,7 @@ impl Perlin {
             }
         }
 
-        return trilinear_interp(&c, u, v, w);
+        trilinear_interp(&c, u, v, w)
     }
 
     pub fn perlin_generate() -> Box<[Vec3]> {
@@ -66,7 +66,7 @@ impl Perlin {
         p.into_boxed_slice()
     }
 
-    pub fn permute(p: &mut Vec<i64>) {
+    pub fn permute(p: &mut [i64]) {
         let mut rng = rand::thread_rng();
         for i in (0..(p.len() - 1)).rev() {
             let target: usize = (rng.gen::<f64>() * ((i + 1) as f64)) as usize;
@@ -86,7 +86,7 @@ impl Perlin {
 
     pub fn turbulance(&self, p: &Vec3, depth: u8) -> f64 {
         let mut accum: f64 = 0.;
-        let mut temp_p: Vec3 = p.clone();
+        let mut temp_p: Vec3 = *p;
         let mut weight: f64 = 1.;
         for _i in 0..depth {
             accum += weight * self.noise(&temp_p);
