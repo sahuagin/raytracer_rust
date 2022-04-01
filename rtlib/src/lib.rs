@@ -4,6 +4,7 @@
 #![feature(box_into_boxed_slice)]
 #![feature(int_roundings)]
 #![feature(let_chains)]
+#![feature(const_fn_trait_bound)]
 pub mod aabb;
 pub mod bvh;
 pub mod camera;

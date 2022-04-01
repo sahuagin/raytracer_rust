@@ -15,4 +15,11 @@ members = [
 opt-level = 3
 debug = 2
 
+[rtlib]
+bench = false
+
+[rt]
+bench = false
+
+
 
